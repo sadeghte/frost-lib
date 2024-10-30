@@ -1,0 +1,3 @@
+language = "C"
+header = ""
+include_guard = "FROST_ED25519_LIB_H"
