@@ -1,1 +1,4 @@
 /target
+/build
+/venv
+/node_modules
