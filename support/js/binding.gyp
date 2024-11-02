@@ -1,9 +1,9 @@
 {
     "targets": [
         {
-            "target_name": "node_addon",
-            "sources": ["node_addon.cpp"],
-      		"libraries": [ "<(module_root_dir)/target/release/libfrost_ed25519.so" ],
+            "target_name": "addon",
+            "sources": ["addon.cpp"],
+      		"libraries": [ "<(module_root_dir)/../../lib/target/release/libfrost_ed25519.so" ],
             "include_dirs": [
                 "<!@(node -p \"require('node-addon-api').include\")",
             ],

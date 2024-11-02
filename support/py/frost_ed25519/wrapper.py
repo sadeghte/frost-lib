@@ -3,7 +3,8 @@ import json
 import os
 
 
-lib = ctypes.CDLL(os.path.abspath("./target/release/libfrost_ed25519.so"))
+package_dir = os.path.dirname(__file__)
+lib = ctypes.CDLL(os.path.join(package_dir, 'libfrost_ed25519.so'))
 
 lib.keys_generate_with_dealer.restype = ctypes.POINTER(ctypes.c_uint8)
 lib.key_package_from.argtypes = [ctypes.POINTER(ctypes.c_uint8)]

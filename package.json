@@ -1,15 +1,16 @@
 {
-  "name": "frost-ed25519-lib",
+  "name": "frost-ed25519",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
+  "keywords": [],
+  "main": "support/js/index.js",
   "gypfile": true,
+  "scripts": {
+	"install": "cd support/js && make install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
     "node-addon-api": "^8.2.1"
   },

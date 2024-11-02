@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <iomanip> 
-#include "frost-ed25519-lib.h" // Include the header file
+#include "../../lib/frost-ed25519-lib.h" // Include the header file
 
 
 Napi::Value jsonParse(const Napi::CallbackInfo& info, std::string& json_string) {
@@ -36,7 +36,7 @@ Napi::Object getJsonAndFreeMem(const Napi::CallbackInfo& info, const uint8_t* pt
     Napi::Value json_obj = jsonParse(info, json_str);
     
     // Free the allocated memory
-    mem_free(ptr, json_len + 2); // Free the memory, adjusting for the length prefix
+    mem_free(ptr); // Free the memory, adjusting for the length prefix
     return json_obj.As<Napi::Object>();
 }
 
