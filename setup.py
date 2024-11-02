@@ -5,7 +5,6 @@ from setuptools.command.install import install
 class CustomBuildCommand(install):
 	"""Customized setuptools install command - runs `make` to build the shared library."""
 	def run(self):
-		print("***** Current directory:", os.getcwd())
 		# Run the Makefile before installation
 		make_path = os.path.join(os.path.dirname(__file__), 'lib', 'Makefile')
 		if os.path.exists(make_path):
@@ -13,7 +12,6 @@ class CustomBuildCommand(install):
 			subprocess.check_call(['make', 'build-sl'], cwd=make_dir)
 
 			src_so_file = os.path.join(os.getcwd(), './lib/target/release/libfrost_ed25519.so')
-			print("***** source file:", os.getcwd())
 
 			site_packages_dir = site.getsitepackages()[0]
 			package_name = self.distribution.get_name()

@@ -8,7 +8,7 @@
   "main": "support/js/index.js",
   "gypfile": true,
   "scripts": {
-	"install": "cd support/js && make install",
+	"install": "make -C ./lib install && cd support/js && make install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
