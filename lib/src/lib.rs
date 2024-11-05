@@ -15,10 +15,7 @@ use frost_ed25519::{
 };
 use rand::thread_rng;
 use structs::{SerializableR2SecretPackage, SerializableR1SecretPackage};
-use std::{
-	ptr,
-	collections::BTreeMap
-};
+use std::collections::BTreeMap;
 use hex;
 use serde::{
 	Serialize, 
@@ -40,15 +37,6 @@ macro_rules! RET_ERR {
     };
 }
 
-macro_rules! RET_ERR_B {
-    ($expr:expr) => {
-        match $expr {
-            Ok(val) => val,
-            Err(_) => return false,
-        }
-    };
-}
-
 fn str_to_forgotten_buf(str: String) -> *const u8 {
 	let str_bytes = str.as_bytes();
     let str_len = str_bytes.len();
@@ -65,14 +53,10 @@ fn str_to_forgotten_buf(str: String) -> *const u8 {
     ptr
 }
 
-fn to_json_buff<T: Serialize>(value: &T) -> *const u8 {
+fn to_json_buff<T: Serialize>(value: &T) -> Result<*const u8, serde_json::Error> {
     // Serialize the value to JSON
-    let json = match serde_json::to_string(value) {
-        Ok(json) => json,
-        Err(_) => return ptr::null_mut(), // Return null on serialization error
-    };
-
-    str_to_forgotten_buf(json)
+    let json = serde_json::to_string(value)?;
+    Ok(str_to_forgotten_buf(json))
 }
 
 fn from_json_buff<T: DeserializeOwned>(buffer: *const u8) -> Result<T, Box<dyn std::error::Error>> {
@@ -127,7 +111,7 @@ fn b2id(id: Vec<u8>) -> Result<Identifier, Error> {
 #[no_mangle]
 pub extern "C" fn get_id(id: *const u8) -> *const u8 {
 	let identifier: Identifier = RET_ERR!(from_json_buff(id));
-	to_json_buff(&identifier)
+	RET_ERR!(to_json_buff(&identifier))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -151,7 +135,7 @@ pub extern "C" fn dkg_part1(id: *const u8, max_signers: u16, min_signers: u16) -
     ));
 
 	let result = DkgPart1Result { secret_package: secret_package.into(), package };
-	to_json_buff(&result)
+	RET_ERR!(to_json_buff(&result))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -199,7 +183,7 @@ pub extern "C" fn dkg_part2(r1_skrt_pkg_buff: *const u8, r1_pkg_buff: *const u8)
 		packages
 	};
 
-	to_json_buff(&result)
+	RET_ERR!(to_json_buff(&result))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -224,7 +208,7 @@ pub extern "C" fn dkg_part3(r2_sec_pkg_buf: *const u8, r1_pkgs_buf: *const u8, r
 		pubkey_package
 	};
 
-	to_json_buff(&result)
+	RET_ERR!(to_json_buff(&result))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -243,14 +227,14 @@ pub extern "C" fn keys_generate_with_dealer(min_signers: u16, max_signers: u16) 
 		rng,
 	));
 	let result = DealerKeysResult { shares, pubkey_package };
-	to_json_buff(&result)
+	RET_ERR!(to_json_buff(&result))
 }
 
 #[no_mangle]
 pub extern "C" fn key_package_from(secret_share: *const u8) -> *const u8 {
 	let share: SecretShare = RET_ERR!(from_json_buff(secret_share));
 	let key_package = RET_ERR!(frost::keys::KeyPackage::try_from(share));
-	to_json_buff(&key_package)
+	RET_ERR!(to_json_buff(&key_package))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -265,7 +249,7 @@ pub extern "C" fn round1_commit(secret_buf: *const u8) -> *const u8 {
 	let mut rng = thread_rng();
 	let (nonces, commitments) = frost::round1::commit(&secret, &mut rng);
 	let result = Round1CommitResult {nonces, commitments};
-	to_json_buff(&result)
+	RET_ERR!(to_json_buff(&result))
 }
 
 #[no_mangle]
@@ -275,7 +259,7 @@ pub extern "C" fn signing_package_new(signing_commitments_buf: *const u8, msg: *
 	let message_hex: String = RET_ERR!(from_json_buff(msg));
 	let message: Vec<u8> = RET_ERR!(hex::decode(message_hex));
 	let signing_package = frost::SigningPackage::new(signing_commitments, &message);
-	to_json_buff(&signing_package)
+	RET_ERR!(to_json_buff(&signing_package))
 }
 
 #[no_mangle]
@@ -284,7 +268,7 @@ pub extern "C" fn round2_sign(signing_package_buf: *const u8, signer_nonces_buf:
 	let signer_nonces: round1::SigningNonces = RET_ERR!(from_json_buff(signer_nonces_buf));
 	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
 	let signature_share: round2::SignatureShare = RET_ERR!(frost::round2::sign(&signing_package, &signer_nonces, &key_package));
-	to_json_buff(&signature_share)
+	RET_ERR!(to_json_buff(&signature_share))
 }
 
 #[no_mangle]
@@ -293,19 +277,20 @@ pub  extern "C" fn aggregate(signing_package_buf: *const u8, signature_shares_bu
 	let signature_shares: BTreeMap<Identifier, round2::SignatureShare> = RET_ERR!(from_json_buff(signature_shares_buf));
 	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
 	let group_signature: frost::Signature = RET_ERR!(frost::aggregate(&signing_package, &signature_shares, &pubkey_package));
-	to_json_buff(&group_signature)
+	RET_ERR!(to_json_buff(&group_signature))
 }
 
 #[no_mangle]
-pub extern "C" fn verify_group_signature(signature_buf: *const u8, msg_buf: *const u8, pubkey_package_buf: *const u8) -> bool {
-	let group_signature:frost::Signature = RET_ERR_B!(from_json_buff(signature_buf));
-	let message_hex: String = RET_ERR_B!(from_json_buff(msg_buf));
-	let message: Vec<u8> = RET_ERR_B!(hex::decode(message_hex));
-	let pubkey_package: PublicKeyPackage = RET_ERR_B!(from_json_buff(pubkey_package_buf));
-	pubkey_package
+pub extern "C" fn verify_group_signature(signature_buf: *const u8, msg_buf: *const u8, pubkey_package_buf: *const u8) -> *const u8 {
+	let group_signature:frost::Signature = RET_ERR!(from_json_buff(signature_buf));
+	let message_hex: String = RET_ERR!(from_json_buff(msg_buf));
+	let message: Vec<u8> = RET_ERR!(hex::decode(message_hex));
+	let pubkey_package: PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
+	let verified: bool = pubkey_package
 		.verifying_key()
 		.verify(&message, &group_signature)
-		.is_ok()
+		.is_ok();
+	RET_ERR!(to_json_buff(&verified))
 }
 
 #[no_mangle]

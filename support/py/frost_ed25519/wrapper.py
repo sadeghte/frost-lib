@@ -37,7 +37,7 @@ lib.aggregate.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.
 lib.aggregate.restype = ctypes.POINTER(ctypes.c_uint8)
 
 lib.verify_group_signature.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
-lib.verify_group_signature.restype = ctypes.c_bool
+lib.verify_group_signature.restype = ctypes.POINTER(ctypes.c_uint8)
 
 lib.mem_free.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
 
@@ -128,12 +128,13 @@ def aggregate(signing_package, signature_shares, pubkey_package):
 	return data
 
 def verify_group_signature(signature, msg, pubkey_package):
-	verified = lib.verify_group_signature(
+	ptr = lib.verify_group_signature(
 		dict_to_buffer(signature), 
 		dict_to_buffer(msg), 
 		dict_to_buffer(pubkey_package)
 	)
-	return verified
+	data = get_json_and_free_mem(ptr)
+	return data
 
 if __name__ == "__main__":
 	pass

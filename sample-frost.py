@@ -7,6 +7,7 @@ max_signers = 3
 result = frost.keys_generate_with_dealer(min_signers, max_signers)
 shares = result['shares']
 pubkey_package = result['pubkey_package']
+print("publicKey: ", pubkey_package["verifying_key"])
 # print("Result:", result)
 
 key_packages = {};
@@ -29,6 +30,7 @@ for identifier,_ in list(result["shares"].items())[:min_signers]:
 
 signature_shares = {}
 message = b"message to sign"
+print("message: ", message)
 signing_package = frost.signing_package_new(commitments_map, message.hex());
 """
 ==========================================================================
@@ -49,11 +51,10 @@ generates the final signature.
 ==========================================================================
 """
 group_signature = frost.aggregate(signing_package, signature_shares, pubkey_package)
+print("signature: ", group_signature)
 
 verified1 = frost.verify_group_signature(group_signature, message.hex(), pubkey_package);
 verified2 = frost.verify_group_signature(group_signature, b"wrong message".hex(), pubkey_package);
 
-print("publicKey: ", pubkey_package)
-print("signature: ", group_signature)
 print("correct message verified: ", verified1);
 print("  wrong message verified: ", verified2);
