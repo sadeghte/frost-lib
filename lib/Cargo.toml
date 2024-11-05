@@ -5,8 +5,9 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-frost-core = "2.0.0"
-frost-ed25519 = "2.0.0"
+frost-core = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
+frost-ed25519 = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
+
 ffi-support = "0.4.4"
 libc = "0.2.161"
 rand = "0.8.5"
