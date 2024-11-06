@@ -46,7 +46,10 @@ def get_json_and_free_mem(ptr):
 	json_len = (u16_buffer[0] << 8) | u16_buffer[1]
 	json_buffer = ctypes.string_at(ctypes.addressof(ptr.contents) + 2, json_len)
 	try:
-		return json.loads(json_buffer)
+		data = json.loads(json_buffer)
+		if isinstance(data, dict) and 'error' in data and data['error'] is not None:
+			raise ValueError(data['error'])
+		return data;
 	finally:
 		lib.mem_free(ptr)  
    
@@ -86,8 +89,8 @@ def dkg_part3(round2_secret_package, round1_packages, round2_packages):
 	data = get_json_and_free_mem(ptr)
 	return data
 
-def keys_generate_with_dealer(min_signers, max_signers):
-	ptr = lib.keys_generate_with_dealer(ctypes.c_uint16(min_signers), ctypes.c_uint16(max_signers))
+def keys_generate_with_dealer(max_signers, min_signers):
+	ptr = lib.keys_generate_with_dealer(ctypes.c_uint16(max_signers), ctypes.c_uint16(min_signers))
 	data = get_json_and_free_mem(ptr)
 	return data
 

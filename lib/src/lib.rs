@@ -218,7 +218,7 @@ pub struct DealerKeysResult {
 }
 
 #[no_mangle]
-pub extern "C" fn keys_generate_with_dealer(min_signers: u16, max_signers: u16) -> *const u8 {
+pub extern "C" fn keys_generate_with_dealer(max_signers: u16, min_signers: u16) -> *const u8 {
 	let rng = thread_rng();
 	let (shares, pubkey_package) = RET_ERR!(frost::keys::generate_with_dealer(
 		max_signers,

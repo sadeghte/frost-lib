@@ -4,7 +4,7 @@ import frost_ed25519 as frost;
 min_signers = 2
 max_signers = 3
 
-result = frost.keys_generate_with_dealer(min_signers, max_signers)
+result = frost.keys_generate_with_dealer(max_signers, min_signers)
 shares = result['shares']
 pubkey_package = result['pubkey_package']
 print("publicKey: ", pubkey_package["verifying_key"])
