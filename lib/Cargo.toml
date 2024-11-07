@@ -23,3 +23,5 @@ cbindgen = "0.27"  # Latest version of cbindgen
 [lib]
 crate-type = ["cdylib"]
 name = "frost_ed25519"
+
+[workspace]
