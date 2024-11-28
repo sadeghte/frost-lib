@@ -1,20 +1,10 @@
 use frost_ed25519::{
-	self as frost, 
-	Error,
-	round1, 
-	round2, 
-	keys:: {
-		self,
-		SigningShare, 
-		SecretShare, 
-		PublicKeyPackage,
-		dkg,
-	},
-	Identifier, 
-	SigningPackage
+	self as frost, keys:: {
+		self, dkg, PublicKeyPackage, SecretShare, SigningShare
+	}, round1, round2, Error, Identifier, SigningKey, SigningPackage
 };
 use rand::thread_rng;
-use structs::{SerializableR2SecretPackage, SerializableR1SecretPackage};
+use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
 use std::collections::BTreeMap;
 use hex;
 use serde::{
@@ -225,6 +215,22 @@ pub extern "C" fn keys_generate_with_dealer(max_signers: u16, min_signers: u16) 
 		min_signers,
 		frost::keys::IdentifierList::Default,
 		rng,
+	));
+	let result = DealerKeysResult { shares, pubkey_package };
+	RET_ERR!(to_json_buff(&result))
+}
+
+#[no_mangle]
+pub extern "C" fn keys_split(secret_buff: *const u8, max_signers: u16, min_signers: u16) -> *const u8 {
+	let scalar: SerializableScalar = RET_ERR!(from_json_buff(secret_buff));
+	let secret: SigningKey = RET_ERR!(SigningKey::from_scalar(scalar.0));
+	let mut rng = thread_rng();
+	let (shares, pubkey_package) = RET_ERR!(frost::keys::split(
+		&secret,
+		max_signers,
+		min_signers,
+		frost::keys::IdentifierList::Default,
+		&mut rng,
 	));
 	let result = DealerKeysResult { shares, pubkey_package };
 	RET_ERR!(to_json_buff(&result))

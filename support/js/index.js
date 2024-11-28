@@ -56,6 +56,14 @@ function keysGenerateWithDealer(maxSigners, minSigners) {
 	return addon.keys_generate_with_dealer(maxSigners, minSigners);
 }
 
+function keysSplit(secret, maxSigners, minSigners) {
+	return addon.keys_split(
+		dictToBuff(secret), 
+		maxSigners, 
+		minSigners
+	);
+}
+
 function keyPackageFrom(secretShare) {
 	return addon.key_package_from(
 		dictToBuff(secretShare)
@@ -105,6 +113,7 @@ module.exports = {
 	dkgPart2,
 	dkgPart3,
 	keysGenerateWithDealer,
+	keysSplit,
 	keyPackageFrom,
 	round1Commit,
 	signingPackageNew,

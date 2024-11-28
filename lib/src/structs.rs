@@ -16,7 +16,7 @@ use hex;
 type Scalar = frost_core::Scalar<E>;
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct SerializableScalar(Scalar);
+pub struct SerializableScalar(pub Scalar);
 
 impl Serialize for SerializableScalar {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -34,22 +34,17 @@ impl<'de> Deserialize<'de> for SerializableScalar {
     where
         D: Deserializer<'de>,
     {
-        // let hex_string: String = String::deserialize(deserializer)?;
-        // serde_json::from_str(&hex_string).map_err(serde::de::Error::custom)
-
-		let hex_string: String = String::deserialize(deserializer)?; // Deserialize as String
+        let hex_string: String = String::deserialize(deserializer)?; // Deserialize as String
         
         // Convert the hex string back to bytes
-        let bytes = hex::decode(&hex_string).map_err(serde::de::Error::custom)?;
+        let bytes: Vec<u8> = hex::decode(&hex_string).map_err(serde::de::Error::custom)?;
+
 		let mut array = [0u8; 32];
 		array.copy_from_slice(&bytes);
         
         // Construct the Scalar from the bytes
         let scalar = Scalar::from_bytes_mod_order(array);
         Ok(SerializableScalar(scalar))
-		
-		// let scalar: Scalar = Scalar::deserialize(bytes)?;
-        // Ok(SerializableScalar(scalar))
     }
 }
 

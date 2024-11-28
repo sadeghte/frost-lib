@@ -21,6 +21,9 @@ lib.dkg_part3.restype = ctypes.POINTER(ctypes.c_uint8)
 
 lib.keys_generate_with_dealer.restype = ctypes.POINTER(ctypes.c_uint8)
 
+lib.keys_split.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint16, ctypes.c_uint16]
+lib.keys_split.restype = ctypes.POINTER(ctypes.c_uint8)
+
 lib.key_package_from.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
 lib.key_package_from.restype = ctypes.POINTER(ctypes.c_uint8)
 
@@ -91,6 +94,15 @@ def dkg_part3(round2_secret_package, round1_packages, round2_packages):
 
 def keys_generate_with_dealer(max_signers, min_signers):
 	ptr = lib.keys_generate_with_dealer(ctypes.c_uint16(max_signers), ctypes.c_uint16(min_signers))
+	data = get_json_and_free_mem(ptr)
+	return data
+
+def keys_split(secret, max_signers, min_signers):
+	ptr = lib.keys_split(
+		dict_to_buffer(secret),
+		ctypes.c_uint16(max_signers), 
+		ctypes.c_uint16(min_signers)
+	)
 	data = get_json_and_free_mem(ptr)
 	return data
 
