@@ -1,6 +1,7 @@
 import ctypes
 import json
 import os
+from .types import Part1ResultT, Part2ResultT, Part3ResultT
 
 
 package_dir = os.path.dirname(__file__)
@@ -73,17 +74,17 @@ def get_id(identifier):
 	data = get_json_and_free_mem(ptr)
 	return data
 
-def dkg_part1(identifier, max_signers, min_signers):
+def dkg_part1(identifier, max_signers, min_signers) -> Part1ResultT:
 	ptr = lib.dkg_part1(dict_to_buffer(identifier), ctypes.c_uint16(max_signers), ctypes.c_uint16(min_signers));
 	data = get_json_and_free_mem(ptr)
 	return data
 
-def dkg_part2(round1_secret_package, round1_packages):
+def dkg_part2(round1_secret_package, round1_packages) -> Part2ResultT:
 	ptr = lib.dkg_part2(dict_to_buffer(round1_secret_package), dict_to_buffer(round1_packages));
 	data = get_json_and_free_mem(ptr)
 	return data
 
-def dkg_part3(round2_secret_package, round1_packages, round2_packages):
+def dkg_part3(round2_secret_package, round1_packages, round2_packages) -> Part3ResultT:
 	ptr = lib.dkg_part3(
 		dict_to_buffer(round2_secret_package), 
 		dict_to_buffer(round1_packages),
