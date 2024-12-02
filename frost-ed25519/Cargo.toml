@@ -1,5 +1,5 @@
 [package]
-name = "frost-ed25519-lib"
+name = "frost-ed25519"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
@@ -23,5 +23,3 @@ cbindgen = "0.27"  # Latest version of cbindgen
 [lib]
 crate-type = ["cdylib"]
 name = "frost_ed25519"
-
-[workspace]
