@@ -63,31 +63,6 @@ pub struct DkgPart2Result{
 	packages: BTreeMap<Identifier, keys::dkg::round2::Package>,
 }
 
-#[allow(dead_code)]
-fn print_u8_pointer(ptr: *const u8) {
-    // Check for null pointer
-    if ptr.is_null() {
-        println!("Pointer is null");
-        return;
-    }
-
-    unsafe {
-        // Read the first two bytes to determine the buffer length
-        let high_byte = *ptr as usize;
-        let low_byte = *ptr.add(1) as usize;
-        let length = (high_byte << 8) | low_byte;
-
-        // Create a slice from the buffer starting after the first two bytes
-        let data_slice = std::slice::from_raw_parts(ptr.add(2), length);
-
-        // Convert the slice to a string and print it
-        match std::str::from_utf8(data_slice) {
-            Ok(string) => println!("[{}]:{}", length, string),
-            Err(e) => println!("Failed to convert to string: {}", e),
-        }
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn dkg_part2(r1_skrt_pkg_buff: *const u8, r1_pkg_buff: *const u8) -> *const u8 {
 	let round1_secret_package: SerializableR1SecretPackage = RET_ERR!(from_json_buff(r1_skrt_pkg_buff));

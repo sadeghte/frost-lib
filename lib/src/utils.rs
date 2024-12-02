@@ -59,6 +59,31 @@ pub fn print_struct<T: Serialize>(title: &str, value: &T) {
 	println!("{} {}",title, json_string);
 }
 
+#[allow(dead_code)]
+pub fn print_u8_pointer(ptr: *const u8) {
+	// Check for null pointer
+	if ptr.is_null() {
+		println!("Pointer is null");
+		return;
+	}
+
+	unsafe {
+		// Read the first two bytes to determine the buffer length
+		let high_byte = *ptr as usize;
+		let low_byte = *ptr.add(1) as usize;
+		let length = (high_byte << 8) | low_byte;
+
+		// Create a slice from the buffer starting after the first two bytes
+		let data_slice = std::slice::from_raw_parts(ptr.add(2), length);
+
+		// Convert the slice to a string and print it
+		match std::str::from_utf8(data_slice) {
+			Ok(string) => println!("[{}]:{}", length, string),
+			Err(e) => println!("Failed to convert to string: {}", e),
+		}
+	}
+}
+
 pub fn b2id<C: Ciphersuite>(id: Vec<u8>) -> Result<Identifier<C>, Error<C>> {
     // Check if the length is within valid bounds
     if id.len() < 1 || id.len() > 32 {
