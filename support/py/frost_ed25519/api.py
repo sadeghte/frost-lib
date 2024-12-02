@@ -12,3 +12,7 @@ from .wrapper import (
 	aggregate,
 	verify_group_signature,
 )
+
+def num_to_id(num):
+	num_bytes = num.to_bytes(32, 'little')
+	return num_bytes.hex().lower()

@@ -2,7 +2,7 @@ let frost = require("frost-ed25519");
 
 let minSigners = 3;
 let maxSigners = 5;
-const participants = Array.from({length: maxSigners}, (v, i) => frost.numToIdentifier(i+1));
+const participants = Array.from({length: maxSigners}, (v, i) => frost.numToId(i+1));
 
 let {shares, pubkey_package: pubkeyPackage} = frost.keysGenerateWithDealer(maxSigners, minSigners);
 console.log("publicKey: ", pubkeyPackage["verifying_key"])

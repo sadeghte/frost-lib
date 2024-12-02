@@ -15,18 +15,12 @@ function dictToBuff(obj) {let jsonStr = JSON.stringify(obj);
     return buffer;
 }
 
-function numToIdentifier(num, byteOrder = 'little') {
+function numToId(num) {
     let buffer = Buffer.alloc(32); // Create a buffer of 32 bytes
     
-    if (byteOrder === 'little') {
-        buffer.writeBigUInt64LE(BigInt(num), 0);
-    } else if (byteOrder === 'big') {
-        buffer.writeBigUInt64BE(BigInt(num), 0);
-    } else {
-        throw new Error("Invalid byte order. Use 'little' or 'big'.");
-    }
+	buffer.writeBigUInt64LE(BigInt(num), 0);
 
-    return buffer.toString('hex').toUpperCase();
+    return buffer.toString('hex').toLowerCase();
 }
 
 function dkgPart1(identifier, maxSigners, minSigners) {
@@ -108,7 +102,7 @@ function verifyGroupSignature(groupSignature, message, pubkeyPackage) {
 }
 
 module.exports = {
-	numToIdentifier,
+	numToId,
 	dkgPart1,
 	dkgPart2,
 	dkgPart3,

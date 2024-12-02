@@ -2,7 +2,7 @@ let frost = require("frost-ed25519");
 
 const minSigners = 2;
 const maxSigners = 3;
-const participants = Array.from({length: maxSigners}, (v, i) => frost.numToIdentifier(i+1));
+const participants = Array.from({length: maxSigners}, (v, i) => frost.numToId(i+1));
 
 //============================================================================
 // Key generation, Round 1
