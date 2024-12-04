@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "frost-ed25519"
+    "frost-ed25519",
+    "frost-secp256k1"
 ]

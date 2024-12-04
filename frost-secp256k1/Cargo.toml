@@ -1,12 +1,12 @@
 [package]
-name = "frost-ed25519-lib"
+name = "frost-secp256k1-lib"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
 frost-core = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
-frost-ed25519 = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
+frost-secp256k1 = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
 
 ffi-support = "0.4.4"
 libc = "0.2.161"
@@ -22,4 +22,4 @@ cbindgen = "0.27"  # Latest version of cbindgen
 
 [lib]
 crate-type = ["cdylib"]
-name = "frost_ed25519"
+name = "frost_secp256k1"

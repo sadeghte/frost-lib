@@ -1,14 +1,10 @@
-import frost_ed25519 as frost;
+from frost_lib import secp256k1 as frost
 import json;
 
 
-def num_to_hex(num, byteorder='little'):
-	num_bytes = num.to_bytes(32, byteorder)  # Use 'big' or 'little'
-	return num_bytes.hex().upper()
-
 min_signers = 2;
 max_signers = 3;
-participants = [frost.get_id(num_to_hex(id)) for id in range(1,max_signers+1)]
+participants = [frost.num_to_id(id) for id in range(1,max_signers+1)]
 # print(json.dumps(participants, indent=4))
 
 round1_secret_packages = {};

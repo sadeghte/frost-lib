@@ -1,4 +1,4 @@
-use frost_ed25519::{
+use frost_secp256k1::{
 	self as frost, keys:: {
 		self, dkg, PublicKeyPackage, SecretShare, SigningShare
 	}, round1, round2, Identifier, SigningKey, SigningPackage
@@ -35,9 +35,10 @@ pub extern "C" fn get_id(id: *const u8) -> *const u8 {
 
 #[no_mangle]
 pub extern "C" fn num_to_id(num: u64) -> *const u8 {
-	let mut bytes: Vec<u8> = num.to_le_bytes().to_vec();
-	bytes.resize(32, 0);
-	let identifier: Identifier = RET_ERR!(Identifier::deserialize(&bytes));
+	let bytes: Vec<u8> = num.to_be_bytes().to_vec(); 
+	let mut padded_vec = vec![0u8; 32];
+	padded_vec[24..].copy_from_slice(&bytes);
+	let identifier: Identifier = RET_ERR!(Identifier::deserialize(&padded_vec));
 	RET_ERR!(to_json_buff(&identifier))
 }
 

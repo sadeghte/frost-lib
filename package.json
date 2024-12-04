@@ -1,6 +1,6 @@
 {
-  "name": "frost-ed25519",
-  "version": "1.0.0",
+  "name": "frost-lib",
+  "version": "1.0.1",
   "author": "",
   "license": "ISC",
   "description": "",
@@ -8,7 +8,8 @@
   "main": "support/js/index.js",
   "gypfile": true,
   "scripts": {
-	"install": "make -C ./lib install && cd support/js && make install",
+	"install": "make install && cd support/js && make install",
+	"build-addon": "cd support/js && make install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

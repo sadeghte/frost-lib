@@ -1,4 +1,4 @@
-import frost_ed25519 as frost;
+from frost_lib import secp256k1 as frost;
 
 
 min_signers = 2

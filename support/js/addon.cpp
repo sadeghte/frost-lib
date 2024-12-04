@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <iomanip> 
-#include "../../lib/frost-ed25519-lib.h" // Include the header file
+#include "../../frost-ed25519/frost-ed25519-lib.h" // Include the header file
 
 
 void printBuffer(const uint8_t *buffer) {
@@ -72,6 +72,22 @@ Napi::Object getJsonAndFreeMem(const Napi::CallbackInfo& info, const uint8_t* pt
     // Free the allocated memory
     mem_free(ptr); // Free the memory, adjusting for the length prefix
     return json_obj.As<Napi::Object>();
+}
+
+Napi::Object NumToId(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 1) {
+        Napi::TypeError::New(env, "num_to_id needs one argument").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+	u_int64_t num = info[0].As<Napi::Number>().Int64Value();
+
+	const uint8_t *ptr = num_to_id(num);
+
+    return getJsonAndFreeMem(info, ptr);
 }
 
 Napi::Object DkgPart1(const Napi::CallbackInfo& info) {
@@ -291,6 +307,7 @@ Napi::Object VerifyGroupSignature(const Napi::CallbackInfo& info) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+    exports.Set(Napi::String::New(env, "num_to_id"), Napi::Function::New(env, NumToId));
     exports.Set(Napi::String::New(env, "dkg_part1"), Napi::Function::New(env, DkgPart1));
     exports.Set(Napi::String::New(env, "dkg_part2"), Napi::Function::New(env, DkgPart2));
     exports.Set(Napi::String::New(env, "dkg_part3"), Napi::Function::New(env, DkgPart3));

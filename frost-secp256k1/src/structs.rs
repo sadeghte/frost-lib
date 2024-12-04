@@ -1,15 +1,15 @@
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use frost_ed25519::{
+use frost_secp256k1::{
 	Identifier,
 	keys::{
-		SigningShare,
 		VerifiableSecretSharingCommitment,
 		dkg::{
 			round1::SecretPackage as R1SecretPackage,
 			round2::SecretPackage as R2SecretPackage
-		}
+		},
+		SigningShare
 	},
-	Ed25519Sha512 as E
+	Secp256K1Sha256 as E
 };
 use hex;
 
@@ -39,13 +39,6 @@ impl<'de> Deserialize<'de> for SerializableScalar {
         
         // Convert the hex string back to bytes
         let bytes: Vec<u8> = hex::decode(&hex_string).map_err(serde::de::Error::custom)?;
-
-		// let mut array = [0u8; 32];
-		// array.copy_from_slice(&bytes);
-        
-        // // Construct the Scalar from the bytes
-        // let scalar = Scalar::from_bytes_mod_order(array);
-		//=====================================================================
 
 		let signing_share: SigningShare = SigningShare
 			::deserialize(&bytes)
