@@ -6,18 +6,15 @@ class HeaderT(TypedDict):
 
 class Part1SecretPkgT(TypedDict):
 	identifier: str 
-	coefficients: dict[str, str] 
-	commitment: dict[str, str]
+	coefficients: list[str] 
+	commitment: list[str]
 	min_signers: int 
 	max_signers: int
 
 class Part1PackageT(TypedDict):
 	header: HeaderT
-	identifier: str 
-	coefficients: dict[str, str] 
-	commitment: dict[str, str]
-	min_signers: int 
-	max_signers: int
+	commitment: list[str]
+	proof_of_knowledge: str
       
 class Part1ResultT(TypedDict):
     secret_package: Part1SecretPkgT
