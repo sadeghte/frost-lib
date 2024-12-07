@@ -53,6 +53,9 @@ class CryptoModule:
 		lib.round2_sign.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
 		lib.round2_sign.restype = ctypes.POINTER(ctypes.c_uint8)
 
+		lib.verify_share.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+		lib.verify_share.restype = ctypes.POINTER(ctypes.c_uint8)
+
 		lib.aggregate.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
 		lib.aggregate.restype = ctypes.POINTER(ctypes.c_uint8)
 
@@ -136,6 +139,17 @@ class CryptoModule:
 			dict_to_buffer(signing_package), 
 			dict_to_buffer(signer_nonces), 
 			dict_to_buffer(key_package)
+		)
+		data = self.get_json_and_free_mem(ptr)
+		return data
+	
+	def verify_share(self, identifier, verifying_share, signature_share, signing_package, verifying_key):
+		ptr = self.lib.aggregate(
+			dict_to_buffer(identifier), 
+			dict_to_buffer(verifying_share), 
+			dict_to_buffer(signature_share),
+			dict_to_buffer(signing_package),
+			dict_to_buffer(verifying_key)
 		)
 		data = self.get_json_and_free_mem(ptr)
 		return data

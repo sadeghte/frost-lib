@@ -51,3 +51,18 @@ class Part3PubkeyPkgT(TypedDict):
 class Part3ResultT(TypedDict):
     key_package: Part3KeyPkgT
     pubkey_package: Part3PubkeyPkgT
+
+class SignRound1Commitments(TypedDict):
+	header: HeaderT
+	hiding: str
+	binding: str
+
+class SignRound1Nonces(TypedDict):
+	header: HeaderT
+	hiding: str
+	binding: str
+	commitments: SignRound1Commitments
+
+class SignRound1Result(TypedDict):
+	nonces: SignRound1Nonces
+	commitments: SignRound1Commitments

@@ -1,7 +1,9 @@
 use frost_ed25519::{
-	self as frost, keys:: {
-		self, dkg, PublicKeyPackage, SecretShare, SigningShare
-	}, round1, round2, Identifier, SigningKey, SigningPackage
+	self as frost, 
+	keys:: {
+		self, dkg, PublicKeyPackage, SecretShare, SigningShare, VerifyingShare
+	}, 
+	round1, round2::{self, SignatureShare}, Identifier, SigningKey, SigningPackage, VerifyingKey
 };
 use rand::thread_rng;
 use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
@@ -187,6 +189,30 @@ pub extern "C" fn round2_sign(signing_package_buf: *const u8, signer_nonces_buf:
 	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
 	let signature_share: round2::SignatureShare = RET_ERR!(frost::round2::sign(&signing_package, &signer_nonces, &key_package));
 	RET_ERR!(to_json_buff(&signature_share))
+}
+
+#[no_mangle]
+pub extern "C" fn verify_share(
+	identifier_buf: *const u8,
+	verifying_share_buf: *const u8, 
+	signature_share_buf: *const u8, 
+	signing_package_buf: *const u8, 
+	verifying_key_buf: *const u8
+) -> *const u8 {
+	let identifier: Identifier = RET_ERR!(from_json_buff(identifier_buf));
+	let verifying_share: VerifyingShare = RET_ERR!(from_json_buff(verifying_share_buf));
+	let signature_share: SignatureShare = RET_ERR!(from_json_buff(signature_share_buf));
+	let signing_package: SigningPackage = RET_ERR!(from_json_buff(signing_package_buf));
+	let verifying_key: VerifyingKey = RET_ERR!(from_json_buff(verifying_key_buf));
+
+	let result = frost_core::verify_signature_share(
+		identifier, 
+		&verifying_share, 
+		&signature_share, 
+		&signing_package, 
+		&verifying_key
+	);
+	RET_ERR!(to_json_buff(&result.is_ok()))
 }
 
 #[no_mangle]
