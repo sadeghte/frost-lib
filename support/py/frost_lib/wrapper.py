@@ -71,6 +71,7 @@ class CryptoModule:
 		json_len = (u16_buffer[0] << 8) | u16_buffer[1]
 		json_buffer = ctypes.string_at(ctypes.addressof(ptr.contents) + 2, json_len)
 		try:
+			# TODO: some times json_buffer is not valid json string. for example if you padd identifier instead of SigningPackage and deserialization error occuring 
 			data = json.loads(json_buffer)
 			if isinstance(data, dict) and 'error' in data and data['error'] is not None:
 				raise ValueError(data['error'])
@@ -144,7 +145,7 @@ class CryptoModule:
 		return data
 	
 	def verify_share(self, identifier, verifying_share, signature_share, signing_package, verifying_key):
-		ptr = self.lib.aggregate(
+		ptr = self.lib.verify_share(
 			dict_to_buffer(identifier), 
 			dict_to_buffer(verifying_share), 
 			dict_to_buffer(signature_share),
