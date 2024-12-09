@@ -33,10 +33,26 @@ function buildModule(addon) {
 				)
 			},
 			
+			verifyProofOfKnowledge: function(identifier, commitments, signature) {
+				return addon.verify_proof_of_knowledge(
+					dictToBuff(identifier),
+					dictToBuff(commitments),
+					dictToBuff(signature),
+				)
+			},
+			
 			dkgPart2: function(round1SecretPackage, round1Packages) {
 				return addon.dkg_part2(
 					dictToBuff(round1SecretPackage),
 					dictToBuff(round1Packages)
+				)
+			},
+			
+			dkgVerifySecretShare: function(identifier, secretShare, commitment) {
+				return addon.dkg_verify_secret_share(
+					dictToBuff(identifier),
+					dictToBuff(secretShare),
+					dictToBuff(commitment),
 				)
 			},
 			

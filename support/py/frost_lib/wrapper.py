@@ -30,8 +30,14 @@ class CryptoModule:
 		lib.dkg_part1.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint16, ctypes.c_uint16]
 		lib.dkg_part1.restype = ctypes.POINTER(ctypes.c_uint8)
 
+		lib.verify_proof_of_knowledge.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+		lib.verify_proof_of_knowledge.restype = ctypes.POINTER(ctypes.c_uint8)
+
 		lib.dkg_part2.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
 		lib.dkg_part2.restype = ctypes.POINTER(ctypes.c_uint8)
+
+		lib.dkg_verify_secret_share.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+		lib.dkg_verify_secret_share.restype = ctypes.POINTER(ctypes.c_uint8)
 
 		lib.dkg_part3.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
 		lib.dkg_part3.restype = ctypes.POINTER(ctypes.c_uint8)
@@ -88,9 +94,27 @@ class CryptoModule:
 		ptr = self.lib.dkg_part1(dict_to_buffer(identifier), ctypes.c_uint16(max_signers), ctypes.c_uint16(min_signers));
 		data = self.get_json_and_free_mem(ptr)
 		return data
+	
+	def verify_proof_of_knowledge(self, identifier, commitments, signature) -> bool:
+		ptr = self.lib.verify_proof_of_knowledge(
+			dict_to_buffer(identifier), 
+			dict_to_buffer(commitments), 
+			dict_to_buffer(signature), 
+		);
+		data = self.get_json_and_free_mem(ptr)
+		return data
 
 	def dkg_part2(self, round1_secret_package, round1_packages) -> Part2ResultT:
 		ptr = self.lib.dkg_part2(dict_to_buffer(round1_secret_package), dict_to_buffer(round1_packages));
+		data = self.get_json_and_free_mem(ptr)
+		return data
+	
+	def dkg_verify_secret_share(self, identifier, secret_share, commitment) -> bool:
+		ptr = self.lib.dkg_verify_secret_share(
+			dict_to_buffer(identifier),
+			dict_to_buffer(secret_share),
+			dict_to_buffer(commitment)
+		);
 		data = self.get_json_and_free_mem(ptr)
 		return data
 

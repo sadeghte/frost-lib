@@ -1,9 +1,11 @@
 use frost_ed25519::{
 	self as frost, 
+	Ed25519Sha512 as E,
 	keys:: {
-		self, dkg, PublicKeyPackage, SecretShare, SigningShare, VerifyingShare
+		self, dkg, PublicKeyPackage, SecretShare, SigningShare, VerifyingShare,
+		VerifiableSecretSharingCommitment
 	}, 
-	round1, round2::{self, SignatureShare}, Identifier, SigningKey, SigningPackage, VerifyingKey
+	round1, round2::{self, SignatureShare}, Identifier, SigningKey, SigningPackage, VerifyingKey, Signature
 };
 use rand::thread_rng;
 use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
@@ -67,6 +69,18 @@ pub extern "C" fn dkg_part1(id: *const u8, max_signers: u16, min_signers: u16) -
 	RET_ERR!(to_json_buff(&result))
 }
 
+#[no_mangle]
+pub extern "C" fn verify_proof_of_knowledge(id: *const u8, commitments_buff: *const u8, sign_buff: *const u8) -> *const u8 {
+	let identifier: Identifier = RET_ERR!(from_json_buff(id));
+	let vss:frost_core::keys::VerifiableSecretSharingCommitment<E> = RET_ERR!(from_json_buff(commitments_buff));
+	let signature: Signature = RET_ERR!(from_json_buff(sign_buff));
+	let result = frost_core::keys::dkg::verify_proof_of_knowledge(
+		identifier, 
+		&vss, 
+		&signature);
+	RET_ERR!(to_json_buff(&result.is_ok()))
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct DkgPart2Result{
 	secret_package: SerializableR2SecretPackage,
@@ -88,6 +102,32 @@ pub extern "C" fn dkg_part2(r1_skrt_pkg_buff: *const u8, r1_pkg_buff: *const u8)
 	};
 
 	RET_ERR!(to_json_buff(&result))
+}
+
+/// This method is called by the receiver of a secret share during the Distributed Key Generation (DKG) protocol.
+/// 
+/// Each secret share received from the `dkg_part2` process must be validated using this method before proceeding to `dkg_part3`.
+/// 
+/// If `dkg_part3` fails, it automatically validates the received shares and throws an error if validation fails.
+/// To identify which party acted maliciously, all received shares from each partner should be re-validated after a `dkg_part3` failure.
+/// 
+/// ### Inputs:
+/// - `id`: A pointer to the unique identifier of the participant receiving the share.
+/// - `share_buff`: A buffer containing received secret share.
+/// - `commitment_buff`: A buffer contains the received commitment associated with the share.
+/// 
+/// ### Output:
+/// - Returns a pointer to buffer containing boolean json str
+#[no_mangle]
+pub extern "C" fn dkg_verify_secret_share(id: *const u8, share_buff: *const u8, commitment_buff: *const u8) -> *const u8 {
+	let identifier: Identifier = RET_ERR!(from_json_buff(id));
+	let signing_share: SigningShare = RET_ERR!(from_json_buff(share_buff));
+	let commitment: VerifiableSecretSharingCommitment = RET_ERR!(from_json_buff(commitment_buff));
+
+	let secret_share = SecretShare::new(identifier, signing_share, commitment);
+
+	let verified = secret_share.verify();
+	RET_ERR!(to_json_buff(&verified.is_ok()))
 }
 
 #[derive(Serialize, Deserialize)]

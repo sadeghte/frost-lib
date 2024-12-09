@@ -108,6 +108,24 @@ Napi::Object DkgPart1(const Napi::CallbackInfo& info) {
     return getJsonAndFreeMem(info, ptr);
 }
 
+Napi::Object VerifyProofOfKnowledge(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 3) {
+        Napi::TypeError::New(env, "verify_proof_of_knowledge needs three arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+	const uint8_t *identifier = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *commitments = info[1].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *signature = info[2].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = verify_proof_of_knowledge(identifier, commitments, signature);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
 Napi::Object DkgPart2(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -121,6 +139,24 @@ Napi::Object DkgPart2(const Napi::CallbackInfo& info) {
 	const uint8_t *round1Packages = info[1].As<Napi::Buffer<uint8_t>>().Data();
 
 	const uint8_t *ptr = dkg_part2(round1SecretPackage, round1Packages);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
+Napi::Object DkgVerifySecretShare(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 3) {
+        Napi::TypeError::New(env, "dkg_verify_secret_share needs three arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+	const uint8_t *identifier = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *secret_share = info[1].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *commitment = info[2].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = dkg_verify_secret_share(identifier, secret_share, commitment);
 
     return getJsonAndFreeMem(info, ptr);
 }
@@ -309,7 +345,9 @@ Napi::Object VerifyGroupSignature(const Napi::CallbackInfo& info) {
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "num_to_id"), Napi::Function::New(env, NumToId));
     exports.Set(Napi::String::New(env, "dkg_part1"), Napi::Function::New(env, DkgPart1));
+    exports.Set(Napi::String::New(env, "verify_proof_of_knowledge"), Napi::Function::New(env, VerifyProofOfKnowledge));
     exports.Set(Napi::String::New(env, "dkg_part2"), Napi::Function::New(env, DkgPart2));
+    exports.Set(Napi::String::New(env, "dkg_verify_secret_share"), Napi::Function::New(env, DkgVerifySecretShare));
     exports.Set(Napi::String::New(env, "dkg_part3"), Napi::Function::New(env, DkgPart3));
     exports.Set(Napi::String::New(env, "keys_generate_with_dealer"), Napi::Function::New(env, KeysGenerateWithDealer));
     exports.Set(Napi::String::New(env, "keys_split"), Napi::Function::New(env, KeysSplit));

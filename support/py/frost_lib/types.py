@@ -15,10 +15,10 @@ class Part1PackageT(TypedDict):
 	header: HeaderT
 	commitment: list[str]
 	proof_of_knowledge: str
-      
+	  
 class Part1ResultT(TypedDict):
-    secret_package: Part1SecretPkgT
-    package: Part1PackageT
+	secret_package: Part1SecretPkgT
+	package: Part1PackageT
 
 class Part2SecretPkgT(TypedDict):
 	identifier: str 
@@ -32,8 +32,18 @@ class Part2PackageT(TypedDict):
 	signing_share: str
  
 class Part2ResultT(TypedDict):
-    secret_package: Part2SecretPkgT
-    packages: dict[str, Part2PackageT]
+	secret_package: Part2SecretPkgT
+	packages: dict[str, Part2PackageT]
+
+class SecretShare(TypedDict):
+	# Serialization header
+	header: HeaderT
+	# The participant identifier of this SecretShare (Owner Identifier)
+	identifier: str
+	# Secret Key.
+	signing_share: str
+	# The commitments distributed among signers.
+	commitment: list[str]
 
 class Part3KeyPkgT(TypedDict):
 	header: HeaderT 
@@ -49,8 +59,8 @@ class Part3PubkeyPkgT(TypedDict):
 	verifying_key: str
  
 class Part3ResultT(TypedDict):
-    key_package: Part3KeyPkgT
-    pubkey_package: Part3PubkeyPkgT
+	key_package: Part3KeyPkgT
+	pubkey_package: Part3PubkeyPkgT
 
 class SignRound1Commitments(TypedDict):
 	header: HeaderT
