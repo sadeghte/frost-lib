@@ -1,4 +1,6 @@
-from typing import TypedDict
+from typing import TypedDict, Literal
+
+CurveType = Literal ["ed25519", "secp256k1"]
 
 class HeaderT(TypedDict):
 	version: int

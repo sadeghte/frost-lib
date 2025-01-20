@@ -20,8 +20,11 @@ def dict_to_buffer(data):
 
 class CryptoModule:
 
-	def __init__(self, module_name):
-		lib = ctypes.CDLL(os.path.join(package_dir, f"libfrost_{module_name}.so"))
+	def __init__(self, curve_name):
+		if curve_name not in self.get_curves():
+			raise ValueError(f"Invalid curve name '{curve_name}'. valid curve names: {self.get_curves()}")
+		
+		lib = ctypes.CDLL(os.path.join(package_dir, f"libfrost_{curve_name}.so"))
 		# lib = ctypes.CDLL(os.path.join(package_dir, f"../../../../../target/release/libfrost_{module_name}.so"))
 
 		lib.num_to_id.argtypes = [ctypes.c_int64]
@@ -71,6 +74,10 @@ class CryptoModule:
 		lib.mem_free.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
 
 		self.lib = lib;
+	
+	@staticmethod
+	def get_curves() -> list[str]:
+		return ["ed25519", 'secp256k1']
 
 	def get_json_and_free_mem(self, ptr):
 		u16_buffer = ctypes.string_at(ptr, 2)  # Read the first two bytes
@@ -201,7 +208,7 @@ class CryptoModule:
 ed25519 = CryptoModule('ed25519')
 secp256k1 = CryptoModule('secp256k1')
 
-__all__ = ['ed25519', 'secp256k1']
+__all__ = ['ed25519', 'secp256k1', 'CryptoModule']
 
 if __name__ == "__main__":
 	pass
