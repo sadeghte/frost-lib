@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use frost_ed25519::{
+use frost_secp256k1_tr::{
 	Identifier,
 	keys::{
 		VerifiableSecretSharingCommitment,
@@ -8,7 +8,7 @@ use frost_ed25519::{
 			round2::SecretPackage as R2SecretPackage
 		}
 	},
-	Ed25519Sha512 as E
+	Secp256K1Sha256TR as E
 };
 
 

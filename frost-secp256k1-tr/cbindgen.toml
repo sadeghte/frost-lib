@@ -1,0 +1,4 @@
+language = "C++"
+style = "Tag"
+header = ""
+include_guard = "FROST_SECP256K1_TR_LIB_H"

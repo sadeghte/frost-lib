@@ -77,7 +77,7 @@ class CryptoModule:
 	
 	@staticmethod
 	def get_curves() -> list[str]:
-		return ["ed25519", 'secp256k1']
+		return ["ed25519", 'secp256k1', "secp256k1_tr"]
 
 	def get_json_and_free_mem(self, ptr):
 		u16_buffer = ctypes.string_at(ptr, 2)  # Read the first two bytes
@@ -207,8 +207,9 @@ class CryptoModule:
 	
 ed25519 = CryptoModule('ed25519')
 secp256k1 = CryptoModule('secp256k1')
+secp256k1_tr = CryptoModule('secp256k1_tr')
 
-__all__ = ['ed25519', 'secp256k1', 'CryptoModule']
+__all__ = ['ed25519', 'secp256k1', 'secp256k1_tr', 'CryptoModule']
 
 if __name__ == "__main__":
 	pass

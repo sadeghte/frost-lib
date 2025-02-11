@@ -1,4 +1,4 @@
-from frost_lib import secp256k1 as frost
+from frost_lib import secp256k1_tr as frost
 import json;
 
 

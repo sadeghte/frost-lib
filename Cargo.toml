@@ -1,5 +1,7 @@
 [workspace]
 members = [
-    "frost-ed25519",
-    "frost-secp256k1"
+    # "serializable",
+    "frost-ed25519", 
+    "frost-secp256k1",
+    "frost-secp256k1-tr"
 ]

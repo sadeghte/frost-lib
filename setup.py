@@ -17,7 +17,7 @@ class CustomBuildCommand(install):
 
 			os.makedirs(target_dir, exist_ok=True)
 
-			for module in ['ed25519', 'secp256k1']:
+			for module in ['ed25519', 'secp256k1', 'secp256k1_tr']:
 				src_so_file = os.path.join(os.getcwd(), f"./target/release/libfrost_{module}.so")
 				target_so_file = os.path.join(target_dir, f"libfrost_{module}.so")
 				shutil.copy(src_so_file, target_so_file)

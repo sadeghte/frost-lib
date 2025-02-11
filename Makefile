@@ -1,7 +1,7 @@
 # Root Makefile
 
 # Define the list of submodules
-SUBMODULES := frost-ed25519 frost-secp256k1  # Replace with your actual submodule names
+SUBMODULES := frost-ed25519 frost-secp256k1 frost-secp256k1-tr  # Replace with your actual submodule names
 
 # Default target to build and install all submodules
 all: install
