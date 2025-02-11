@@ -1,4 +1,4 @@
-let frost = require("frost-ed25519");
+let frost = require("frost-ed25519-tr");
 
 const minSigners = 2;
 const maxSigners = 3;

@@ -1,5 +1,6 @@
 const ed25519_addon = require('./build/Release/addon-ed25519.node');
 const secp256k1_addon = require('./build/Release/addon-secp256k1.node');
+const secp256k1_tr_addon = require('./build/Release/addon-secp256k1-tr.node');
 
 function dictToBuff (obj) {let jsonStr = JSON.stringify(obj);
 	let length = jsonStr.length;
@@ -124,8 +125,10 @@ function buildModule(addon) {
 
 const ed25519 = buildModule(ed25519_addon);
 const secp256k1 = buildModule(secp256k1_addon);
+const secp256k1_tr = buildModule(secp256k1_tr_addon);
 
 module.exports = {
 	ed25519,
 	secp256k1,
+	secp256k1_tr,
 };
