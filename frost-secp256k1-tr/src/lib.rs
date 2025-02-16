@@ -1,6 +1,8 @@
 use frost_secp256k1_tr::{
-	self as frost, keys:: {
-		self, dkg, PublicKeyPackage, SecretShare, SigningShare, VerifiableSecretSharingCommitment, VerifyingShare
+	self as frost, 
+    keys:: {
+		self, dkg, PublicKeyPackage, SecretShare, SigningShare, Tweak, 
+        VerifiableSecretSharingCommitment, VerifyingShare
 	}, round1, round2::{self, SignatureShare}, Identifier, 
 	Signature, SigningKey, SigningPackage, VerifyingKey
 };
@@ -233,6 +235,36 @@ pub extern "C" fn round2_sign(signing_package_buf: *const u8, signer_nonces_buf:
 }
 
 #[no_mangle]
+pub extern "C" fn round2_sign_with_tweak(
+    signing_package_buf: *const u8, 
+    signer_nonces_buf: *const u8, 
+    key_package_buf: *const u8,
+    merkle_root_buf: *const u8
+) -> *const u8 {
+	let signing_package: SigningPackage = RET_ERR!(from_json_buff(signing_package_buf));
+	let signer_nonces: round1::SigningNonces = RET_ERR!(from_json_buff(signer_nonces_buf));
+	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
+    let merkle_root: Option<Vec<u8>> = match merkle_root_buf.is_null() {
+        true => None,
+        false => {
+            let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
+            let mr: Vec<u8> = RET_ERR!(hex::decode(hex_str));
+            Some(mr)
+        }
+    };
+
+	let signature_share: round2::SignatureShare = RET_ERR!(
+        frost::round2::sign_with_tweak(
+            &signing_package, 
+            &signer_nonces, 
+            &key_package,
+            merkle_root.as_deref()
+        )
+    );
+	RET_ERR!(to_json_buff(&signature_share))
+}
+
+#[no_mangle]
 pub extern "C" fn verify_share(
 	identifier_buf: *const u8,
 	verifying_share_buf: *const u8, 
@@ -263,6 +295,50 @@ pub  extern "C" fn aggregate(signing_package_buf: *const u8, signature_shares_bu
 	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
 	let group_signature: frost::Signature = RET_ERR!(frost::aggregate(&signing_package, &signature_shares, &pubkey_package));
 	RET_ERR!(to_json_buff(&group_signature))
+}
+
+#[no_mangle]
+pub  extern "C" fn aggregate_with_tweak(
+    signing_package_buf: *const u8, 
+    signature_shares_buf: *const u8, 
+    pubkey_package_buf: *const u8,
+    merkle_root_buf: *const u8
+) -> *const u8 {
+	let signing_package: frost::SigningPackage = RET_ERR!(from_json_buff(signing_package_buf));
+	let signature_shares: BTreeMap<Identifier, round2::SignatureShare> = RET_ERR!(from_json_buff(signature_shares_buf));
+	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
+    let merkle_root: Option<Vec<u8>> = match merkle_root_buf.is_null() {
+        true => None,
+        false => {
+            let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
+            let mr: Vec<u8> = RET_ERR!(hex::decode(hex_str));
+            Some(mr)
+        }
+    };
+
+	let group_signature: frost::Signature = RET_ERR!(frost::aggregate_with_tweak(
+        &signing_package, 
+        &signature_shares, 
+        &pubkey_package,
+        merkle_root.as_deref()
+    ));
+	RET_ERR!(to_json_buff(&group_signature))
+}
+
+#[no_mangle]
+pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
+	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
+    let merkle_root: Option<Vec<u8>> = match merkle_root_buf.is_null() {
+        true => None,
+        false => {
+            let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
+            let mr: Vec<u8> = RET_ERR!(hex::decode(hex_str));
+            Some(mr)
+        }
+    };
+
+	let pubkey_package_tweaked = pubkey_package.clone().tweak(merkle_root.as_deref());
+	RET_ERR!(to_json_buff(&pubkey_package_tweaked))
 }
 
 #[no_mangle]
