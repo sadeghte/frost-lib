@@ -4,7 +4,11 @@
 #include <cstring>
 #include <cstdlib>
 #include <iomanip> 
-#include "../../frost-ed25519/frost-ed25519-lib.h" // Include the header file
+// #include "../../frost-ed25519/frost-ed25519-lib.h" // Include the header file
+
+#ifdef FROST_LIB_HEADER
+    #include FROST_LIB_HEADER
+#endif
 
 
 void printBuffer(const uint8_t *buffer) {
@@ -342,6 +346,63 @@ Napi::Object VerifyGroupSignature(const Napi::CallbackInfo& info) {
     return getJsonAndFreeMem(info, ptr);
 }
 
+#ifdef FROST_SECP256K1_TR_LIB_H
+Napi::Object Round2SignWithTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 4) {
+        Napi::TypeError::New(env, "round2_sign_with_tweak needs four arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *signingPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *nonces = info[1].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *keyPackage = info[2].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *merkleRoot = info[3].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = round2_sign_with_tweak(signingPackage, nonces, keyPackage, merkleRoot);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
+Napi::Object AggregateWithTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 4) {
+        Napi::TypeError::New(env, "aggregate_with_tweak needs four arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *signingPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *signatureShares = info[1].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *pubkeyPackage = info[2].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *merkleRoot = info[3].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = aggregate_with_tweak(signingPackage, signatureShares, pubkeyPackage, merkleRoot);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
+Napi::Object PubkeyPackageTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "pubkey_package_tweak needs two arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *pubkeyPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *merkleRoot = info[1].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = pubkey_package_tweak(pubkeyPackage, merkleRoot);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+#endif
+
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "num_to_id"), Napi::Function::New(env, NumToId));
     exports.Set(Napi::String::New(env, "dkg_part1"), Napi::Function::New(env, DkgPart1));
@@ -357,6 +418,13 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "round2_sign"), Napi::Function::New(env, Round2Sign));
     exports.Set(Napi::String::New(env, "aggregate"), Napi::Function::New(env, Aggregate));
     exports.Set(Napi::String::New(env, "verify_group_signature"), Napi::Function::New(env, VerifyGroupSignature));
+
+#ifdef FROST_SECP256K1_TR_LIB_H
+    exports.Set(Napi::String::New(env, "round2_sign_with_tweak"), Napi::Function::New(env, Round2SignWithTweak));
+    exports.Set(Napi::String::New(env, "aggregate_with_tweak"), Napi::Function::New(env, AggregateWithTweak));
+    exports.Set(Napi::String::New(env, "pubkey_package_tweak"), Napi::Function::New(env, PubkeyPackageTweak));
+#endif
+
 	return exports;
 }
 

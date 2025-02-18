@@ -9,7 +9,10 @@
             ],
             "cflags!": ["-fno-exceptions"],
             "cflags_cc!": ["-fno-exceptions"],
-      		"defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
+      		"defines": [ 
+                "NAPI_DISABLE_CPP_EXCEPTIONS",
+                "FROST_LIB_HEADER=\"../../frost-ed25519/frost-ed25519-lib.h\""
+            ],
 			"dependencies": [
 				"<!(node -p \"require('node-addon-api').gyp\")"
 			]
@@ -23,7 +26,10 @@
             ],
             "cflags!": ["-fno-exceptions"],
             "cflags_cc!": ["-fno-exceptions"],
-      		"defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
+      		"defines": [ 
+                "NAPI_DISABLE_CPP_EXCEPTIONS",
+                "FROST_LIB_HEADER=\"../../frost-secp256k1/frost-secp256k1-lib.h\""
+            ],
 			"dependencies": [
 				"<!(node -p \"require('node-addon-api').gyp\")"
 			]
@@ -37,7 +43,10 @@
             ],
             "cflags!": ["-fno-exceptions"],
             "cflags_cc!": ["-fno-exceptions"],
-      		"defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
+      		"defines": [ 
+                "NAPI_DISABLE_CPP_EXCEPTIONS",
+                "FROST_LIB_HEADER=\"../../frost-secp256k1-tr/frost-secp256k1-tr-lib.h\""
+            ],
 			"dependencies": [
 				"<!(node -p \"require('node-addon-api').gyp\")"
 			]

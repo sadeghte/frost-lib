@@ -127,6 +127,33 @@ const ed25519 = buildModule(ed25519_addon);
 const secp256k1 = buildModule(secp256k1_addon);
 const secp256k1_tr = buildModule(secp256k1_tr_addon);
 
+Object.assign(secp256k1_tr, {	
+    round2SignWithTweak: function(signingPackage, nonces, keyPackage, merkle_root) {
+        return this.__nativeModule.round2_sign_with_tweak(
+            dictToBuff(signingPackage),
+            dictToBuff(nonces),
+            dictToBuff(keyPackage), 
+            !!merkle_root ? dictToBuff(merkle_root) : null
+        )
+    },
+    
+    aggregateWithTweak: function(signingPackage, signatureShares, pubkeyPackage, merkle_root) {
+        return this.__nativeModule.aggregate_with_tweak(
+            dictToBuff(signingPackage),
+            dictToBuff(signatureShares),
+            dictToBuff(pubkeyPackage), 
+            !!merkle_root ? dictToBuff(merkle_root) : null
+        )
+    },
+    
+    pubkeyPackageTweak: function(pubkeyPackage, merkle_root) {
+        return this.__nativeModule.pubkey_package_tweak(
+            dictToBuff(pubkeyPackage), 
+            !!merkle_root ? dictToBuff(merkle_root) : null
+        )
+    },
+});
+
 module.exports = {
 	ed25519,
 	secp256k1,
