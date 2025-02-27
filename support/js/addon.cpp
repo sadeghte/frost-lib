@@ -401,6 +401,23 @@ Napi::Object PubkeyPackageTweak(const Napi::CallbackInfo& info) {
 
     return getJsonAndFreeMem(info, ptr);
 }
+
+Napi::Object KeyPackageTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "key_package_tweak needs two arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *keyPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *merkleRoot = info[1].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = pubkey_package_tweak(keyPackage, merkleRoot);
+
+    return getJsonAndFreeMem(info, ptr);
+}
 #endif
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -423,6 +440,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "round2_sign_with_tweak"), Napi::Function::New(env, Round2SignWithTweak));
     exports.Set(Napi::String::New(env, "aggregate_with_tweak"), Napi::Function::New(env, AggregateWithTweak));
     exports.Set(Napi::String::New(env, "pubkey_package_tweak"), Napi::Function::New(env, PubkeyPackageTweak));
+    exports.Set(Napi::String::New(env, "key_package_tweak"), Napi::Function::New(env, KeyPackageTweak));
 #endif
 
 	return exports;

@@ -152,6 +152,13 @@ Object.assign(secp256k1_tr, {
             !!merkle_root ? dictToBuff(merkle_root) : null
         )
     },
+    
+    keyPackageTweak: function(keyPackage, merkle_root) {
+        return this.__nativeModule.key_package_tweak(
+            dictToBuff(keyPackage), 
+            !!merkle_root ? dictToBuff(merkle_root) : null
+        )
+    },
 });
 
 module.exports = {

@@ -342,6 +342,22 @@ pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, merkle_ro
 }
 
 #[no_mangle]
+pub extern "C" fn key_package_tweak(key_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
+	let pubkey_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
+    let merkle_root: Option<Vec<u8>> = match merkle_root_buf.is_null() {
+        true => None,
+        false => {
+            let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
+            let mr: Vec<u8> = RET_ERR!(hex::decode(hex_str));
+            Some(mr)
+        }
+    };
+
+	let pubkey_package_tweaked = pubkey_package.clone().tweak(merkle_root.as_deref());
+	RET_ERR!(to_json_buff(&pubkey_package_tweaked))
+}
+
+#[no_mangle]
 pub extern "C" fn verify_group_signature(signature_buf: *const u8, msg_buf: *const u8, pubkey_package_buf: *const u8) -> *const u8 {
 	let group_signature:frost::Signature = RET_ERR!(from_json_buff(signature_buf));
 	let message_hex: String = RET_ERR!(from_json_buff(msg_buf));

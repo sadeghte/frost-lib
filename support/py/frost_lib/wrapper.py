@@ -251,6 +251,12 @@ class CryptoModuleWithTweak(CryptoModule):
         ]
         self.lib.pubkey_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
 
+        self.lib.key_package_tweak.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8),
+            ctypes.POINTER(ctypes.c_uint8)
+        ]
+        self.lib.key_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
+
     def round2_sign_with_tweak(self, signing_package, signer_nonces, key_package, merkle_root=None):
         ptr = self.lib.round2_sign_with_tweak(
             dict_to_buffer(signing_package),
@@ -274,6 +280,14 @@ class CryptoModuleWithTweak(CryptoModule):
     def pubkey_package_tweak(self, pubkey_package, merkle_root=None):
         ptr = self.lib.pubkey_package_tweak(
             dict_to_buffer(pubkey_package),
+            None if merkle_root is None else dict_to_buffer(merkle_root)
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
+
+    def key_package_tweak(self, key_package, merkle_root=None):
+        ptr = self.lib.key_package_tweak(
+            dict_to_buffer(key_package),
             None if merkle_root is None else dict_to_buffer(merkle_root)
         )
         data = self.get_json_and_free_mem(ptr)

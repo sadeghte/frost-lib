@@ -1,3 +1,13 @@
+/**
+ =========== install for test ==========
+ $ npm link
+ $ npm link frost-lib 
+
+ =============== uninstall ============= 
+ $ npm unlink frost-lib
+ $ npm unlink
+
+ */
 let frost = require("frost-ed25519");
 
 let minSigners = 3;
