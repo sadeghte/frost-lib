@@ -414,7 +414,7 @@ Napi::Object KeyPackageTweak(const Napi::CallbackInfo& info) {
 	const uint8_t *keyPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
 	const uint8_t *merkleRoot = info[1].As<Napi::Buffer<uint8_t>>().Data();
 
-	const uint8_t *ptr = pubkey_package_tweak(keyPackage, merkleRoot);
+	const uint8_t *ptr = key_package_tweak(keyPackage, merkleRoot);
 
     return getJsonAndFreeMem(info, ptr);
 }
