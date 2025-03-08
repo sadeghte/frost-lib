@@ -343,7 +343,7 @@ pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, merkle_ro
 
 #[no_mangle]
 pub extern "C" fn key_package_tweak(key_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
-	let pubkey_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
+	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
     let merkle_root: Option<Vec<u8>> = match merkle_root_buf.is_null() {
         true => None,
         false => {
@@ -353,8 +353,8 @@ pub extern "C" fn key_package_tweak(key_package_buf: *const u8, merkle_root_buf:
         }
     };
 
-	let pubkey_package_tweaked = pubkey_package.clone().tweak(merkle_root.as_deref());
-	RET_ERR!(to_json_buff(&pubkey_package_tweaked))
+	let key_package_tweaked = key_package.clone().tweak(merkle_root.as_deref());
+	RET_ERR!(to_json_buff(&key_package_tweaked))
 }
 
 #[no_mangle]
