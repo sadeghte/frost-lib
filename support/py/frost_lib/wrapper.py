@@ -1,6 +1,6 @@
 import ctypes
 import json
-import os
+import os, platform
 from .types import Part1ResultT, Part2ResultT, Part3ResultT
 
 
@@ -27,8 +27,9 @@ class CryptoModule:
             raise ValueError(
                 f"Invalid curve name '{curve_name}'. valid curve names: {self.get_curves()}")
 
+        ext = '.dylib' if platform.system() == 'Darwin' else '.so'
         lib = ctypes.CDLL(os.path.join(
-            package_dir, f"libfrost_{curve_name}.so"))
+            package_dir, f"libfrost_{curve_name}{ext}"))
         # lib = ctypes.CDLL(os.path.join(package_dir, f"../../../../../target/release/libfrost_{module_name}.so"))
 
         lib.num_to_id.argtypes = [ctypes.c_int64]
