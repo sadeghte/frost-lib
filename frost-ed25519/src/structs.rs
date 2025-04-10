@@ -12,6 +12,7 @@ use frost_ed25519::{
 };
 
 
+pub type Scalar = frost_core::Scalar<E>;
 pub type SerializableScalar = frost_core::serialization::SerializableScalar<E>;
 
 #[derive(Serialize, Deserialize)]

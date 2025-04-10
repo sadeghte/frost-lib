@@ -77,6 +77,19 @@ function buildModule(addon) {
 				);
 			},
 			
+			keysReconstruct: function(secretShares, minSigners) {
+				return addon.keys_reconstruct(
+					dictToBuff(secretShares), 
+					minSigners
+				);
+			},
+			
+			getPubkey: function(secret) {
+				return addon.get_pubkey(
+					dictToBuff(secret)
+				);
+			},
+			
 			keyPackageFrom: function(secretShare) {
 				return addon.key_package_from(
 					dictToBuff(secretShare)
@@ -126,6 +139,22 @@ function buildModule(addon) {
 const ed25519 = buildModule(ed25519_addon);
 const secp256k1 = buildModule(secp256k1_addon);
 const secp256k1_tr = buildModule(secp256k1_tr_addon);
+
+Object.assign(ed25519, {
+    pubkeyPackageTweak: function(pubkeyPackage, merkle_root) {
+        return this.__nativeModule.pubkey_package_tweak(
+            dictToBuff(pubkeyPackage), 
+            !!merkle_root ? dictToBuff(merkle_root) : null
+        )
+    },
+    
+    keyPackageTweak: function(keyPackage, merkle_root) {
+        return this.__nativeModule.key_package_tweak(
+            dictToBuff(keyPackage), 
+            !!merkle_root ? dictToBuff(merkle_root) : null
+        )
+    },
+});
 
 Object.assign(secp256k1_tr, {	
     round2SignWithTweak: function(signingPackage, nonces, keyPackage, merkle_root) {

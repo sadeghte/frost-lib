@@ -1,20 +1,23 @@
+use frost_core::Group;
 use frost_ed25519::{
 	self as frost, 
 	Ed25519Sha512 as E,
 	keys:: {
 		self, dkg, PublicKeyPackage, SecretShare, SigningShare, VerifyingShare,
+        KeyPackage,
 		VerifiableSecretSharingCommitment
 	}, 
 	round1, round2::{self, SignatureShare}, Identifier, SigningKey, SigningPackage, VerifyingKey, Signature
 };
 use rand::thread_rng;
-use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
+use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, Scalar, SerializableScalar};
 use std::collections::BTreeMap;
 use hex;
 use serde::{
 	Serialize, 
 	Deserialize,
 };
+use sha2::{Digest, Sha256};
 use utils::{str_to_forgotten_buf, from_json_buff, to_json_buff, b2id};
 mod structs;
 mod utils;
@@ -191,6 +194,33 @@ pub extern "C" fn keys_split(secret_buff: *const u8, max_signers: u16, min_signe
 }
 
 #[no_mangle]
+pub extern "C" fn keys_reconstruct(secret_shares_buff: *const u8, min_signers: u16) -> *const u8 {
+    let secret_shares: Vec<KeyPackage> = RET_ERR!(from_json_buff(secret_shares_buff)); 
+    
+    if secret_shares.len() != min_signers as usize {
+        RET_ERR!(Err(format!(
+            "Number of secret shares ({}) must equal min_signers ({})",
+            secret_shares.len(),
+            min_signers
+        )));
+    }
+
+    let signing_key: SigningKey = RET_ERR!(frost::keys::reconstruct(&secret_shares));
+
+    let result:SerializableScalar = frost_core::serialization::SerializableScalar(signing_key.to_scalar());
+    RET_ERR!(to_json_buff(&result))
+}
+
+#[no_mangle]
+pub extern "C" fn get_pubkey(secret_buff: *const u8) -> *const u8 {
+    let scalar: SerializableScalar = RET_ERR!(from_json_buff(secret_buff));
+	let secret: SigningKey = RET_ERR!(SigningKey::from_scalar(scalar.0));
+
+    let result = VerifyingKey::from(&secret);
+    RET_ERR!(to_json_buff(&result))
+}
+
+#[no_mangle]
 pub extern "C" fn key_package_from(secret_share: *const u8) -> *const u8 {
 	let share: SecretShare = RET_ERR!(from_json_buff(secret_share));
 	let key_package = RET_ERR!(frost::keys::KeyPackage::try_from(share));
@@ -262,6 +292,71 @@ pub  extern "C" fn aggregate(signing_package_buf: *const u8, signature_shares_bu
 	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
 	let group_signature: frost::Signature = RET_ERR!(frost::aggregate(&signing_package, &signature_shares, &pubkey_package));
 	RET_ERR!(to_json_buff(&group_signature))
+}
+
+fn sha256_hash(input: Vec<u8>) -> Vec<u8> {
+    let mut hasher = Sha256::new();    // Create a new SHA-256 hasher
+    hasher.update(input);              // Feed the input data into the hasher
+    let result = hasher.finalize();    // Compute the hash
+    result.to_vec()                    // Convert the hash to Vec<u8>
+}
+
+fn hash_to_scalar(input: Vec<u8>) -> Scalar {
+    let hash = sha256_hash(input);
+    Scalar::from_bytes_mod_order(hash.as_slice().try_into().expect("32 bytes"))
+}
+
+#[no_mangle]
+pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
+	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
+    let merkle_root: Vec<u8> = {
+        let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
+        RET_ERR!(hex::decode(hex_str))
+    };
+    let t = hash_to_scalar(merkle_root);
+
+    let t_pub = frost::Ed25519Group::generator() * t;
+
+    let verifying_key =
+        VerifyingKey::new(pubkey_package.verifying_key().to_element() + t_pub);
+    let verifying_shares: BTreeMap<_, _> = pubkey_package
+        .verifying_shares()
+        .iter()
+        .map(|(i, vs)| {
+            let vs = VerifyingShare::new(vs.to_element() + t_pub);
+            (*i, vs)
+        })
+        .collect();
+
+	let pubkey_package_tweaked = PublicKeyPackage::new(verifying_shares, verifying_key);
+	RET_ERR!(to_json_buff(&pubkey_package_tweaked))
+}
+
+#[no_mangle]
+pub extern "C" fn key_package_tweak(key_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
+	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
+    let merkle_root: Vec<u8> = {
+        let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
+        RET_ERR!(hex::decode(hex_str))
+    };
+    let t = hash_to_scalar(merkle_root);
+
+    let t_pub = frost::Ed25519Group::generator() * t;
+
+    let verifying_key = VerifyingKey::new(key_package.verifying_key().to_element() + t_pub);
+    let signing_share = SigningShare::new(key_package.signing_share().to_scalar() + t);
+    let verifying_share =
+        VerifyingShare::new(key_package.verifying_share().to_element() + t_pub); 
+
+    let key_package_tweaked = KeyPackage::new(
+        *key_package.identifier(), 
+        signing_share, 
+        verifying_share, 
+        verifying_key, 
+        *key_package.min_signers()
+    );
+
+	RET_ERR!(to_json_buff(&key_package_tweaked))
 }
 
 #[no_mangle]

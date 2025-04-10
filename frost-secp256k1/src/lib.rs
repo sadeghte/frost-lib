@@ -4,8 +4,10 @@
 // };
 use frost_secp256k1::{
 	self as frost, keys:: {
-		self, dkg, PublicKeyPackage, SecretShare, SigningShare, VerifiableSecretSharingCommitment, VerifyingShare
-	}, round1, round2::{self, SignatureShare}, Identifier, 
+		self, dkg, PublicKeyPackage, SecretShare, SigningShare, 
+        KeyPackage,
+        VerifiableSecretSharingCommitment, VerifyingShare
+	}, round1, round2::{self, SignatureShare}, Identifier,
 	Signature, SigningKey, SigningPackage, VerifyingKey
 };
 use rand::thread_rng;
@@ -193,6 +195,33 @@ pub extern "C" fn keys_split(secret_buff: *const u8, max_signers: u16, min_signe
 	));
 	let result = DealerKeysResult { shares, pubkey_package };
 	RET_ERR!(to_json_buff(&result))
+}
+
+#[no_mangle]
+pub extern "C" fn keys_reconstruct(secret_shares_buff: *const u8, min_signers: u16) -> *const u8 {
+    let secret_shares: Vec<KeyPackage> = RET_ERR!(from_json_buff(secret_shares_buff)); 
+    
+    if secret_shares.len() != min_signers as usize {
+        RET_ERR!(Err(format!(
+            "Number of secret shares ({}) must equal min_signers ({})",
+            secret_shares.len(),
+            min_signers
+        )));
+    }
+
+    let signing_key: SigningKey = RET_ERR!(frost::keys::reconstruct(&secret_shares));
+
+    let result:SerializableScalar = frost_core::serialization::SerializableScalar(signing_key.to_scalar());
+    RET_ERR!(to_json_buff(&result))
+}
+
+#[no_mangle]
+pub extern "C" fn get_pubkey(secret_buff: *const u8) -> *const u8 {
+    let scalar: SerializableScalar = RET_ERR!(from_json_buff(secret_buff));
+	let secret: SigningKey = RET_ERR!(SigningKey::from_scalar(scalar.0));
+
+    let result = VerifyingKey::from(&secret);
+    RET_ERR!(to_json_buff(&result))
 }
 
 #[no_mangle]

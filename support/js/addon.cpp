@@ -228,6 +228,49 @@ Napi::Object KeysSplit(const Napi::CallbackInfo& info) {
     return getJsonAndFreeMem(info, ptr);
 }
 
+Napi::Object KeysReconstruct(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "keys_reconstruct needs two arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+	const uint8_t *secret_shares = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	u_int16_t min_signers = info[1].As<Napi::Number>().Uint32Value();
+
+	// Call the keys_generate_with_dealer function from the shared library
+    const uint8_t* ptr = keys_reconstruct(secret_shares, min_signers);
+    if (ptr == nullptr) {
+        Napi::TypeError::New(env, "Failed to reconstruct key").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
+Napi::Object GetPubkey(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 1) {
+        Napi::TypeError::New(env, "get_pubkey needs one argument").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+	const uint8_t *secret = info[0].As<Napi::Buffer<uint8_t>>().Data();
+
+	// Call the keys_generate_with_dealer function from the shared library
+    const uint8_t* ptr = get_pubkey(secret);
+    if (ptr == nullptr) {
+        Napi::TypeError::New(env, "Failed to get pubkey").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
 Napi::Object KeyPackageFrom(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -346,7 +389,11 @@ Napi::Object VerifyGroupSignature(const Napi::CallbackInfo& info) {
     return getJsonAndFreeMem(info, ptr);
 }
 
+// #if defined(FROST_ED25519_LIB_H) || defined(FROST_SECP256K1_LIB_H)
+// #endif
+
 #ifdef FROST_SECP256K1_TR_LIB_H
+
 Napi::Object Round2SignWithTweak(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -418,6 +465,43 @@ Napi::Object KeyPackageTweak(const Napi::CallbackInfo& info) {
 
     return getJsonAndFreeMem(info, ptr);
 }
+
+#else
+
+Napi::Object PubkeyPackageTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "pubkey_package_tweak needs two arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *pubkeyPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *tweak = info[1].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = pubkey_package_tweak(pubkeyPackage, tweak);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
+Napi::Object KeyPackageTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "key_package_tweak needs two arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *keyPackage = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *tweak = info[1].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = key_package_tweak(keyPackage, tweak);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
 #endif
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -429,6 +513,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "dkg_part3"), Napi::Function::New(env, DkgPart3));
     exports.Set(Napi::String::New(env, "keys_generate_with_dealer"), Napi::Function::New(env, KeysGenerateWithDealer));
     exports.Set(Napi::String::New(env, "keys_split"), Napi::Function::New(env, KeysSplit));
+    exports.Set(Napi::String::New(env, "keys_reconstruct"), Napi::Function::New(env, KeysReconstruct));
+    exports.Set(Napi::String::New(env, "get_pubkey"), Napi::Function::New(env, GetPubkey));
     exports.Set(Napi::String::New(env, "key_package_from"), Napi::Function::New(env, KeyPackageFrom));
     exports.Set(Napi::String::New(env, "round1_commit"), Napi::Function::New(env, Round1Commit));
     exports.Set(Napi::String::New(env, "signing_package_new"), Napi::Function::New(env, SigningPackageNew));
@@ -436,9 +522,15 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "aggregate"), Napi::Function::New(env, Aggregate));
     exports.Set(Napi::String::New(env, "verify_group_signature"), Napi::Function::New(env, VerifyGroupSignature));
 
+// #if defined(FROST_ED25519_LIB_H) || defined(FROST_SECP256K1_LIB_H)
+// #endif
+
 #ifdef FROST_SECP256K1_TR_LIB_H
     exports.Set(Napi::String::New(env, "round2_sign_with_tweak"), Napi::Function::New(env, Round2SignWithTweak));
     exports.Set(Napi::String::New(env, "aggregate_with_tweak"), Napi::Function::New(env, AggregateWithTweak));
+    exports.Set(Napi::String::New(env, "pubkey_package_tweak"), Napi::Function::New(env, PubkeyPackageTweak));
+    exports.Set(Napi::String::New(env, "key_package_tweak"), Napi::Function::New(env, KeyPackageTweak));
+#else
     exports.Set(Napi::String::New(env, "pubkey_package_tweak"), Napi::Function::New(env, PubkeyPackageTweak));
     exports.Set(Napi::String::New(env, "key_package_tweak"), Napi::Function::New(env, KeyPackageTweak));
 #endif

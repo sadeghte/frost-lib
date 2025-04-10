@@ -87,6 +87,14 @@ class CryptoModule:
             ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
         lib.verify_group_signature.restype = ctypes.POINTER(ctypes.c_uint8)
 
+        lib.pubkey_package_tweak.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+        lib.pubkey_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
+
+        lib.key_package_tweak.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+        lib.key_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
+
         lib.mem_free.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
 
         self.lib = lib
@@ -224,6 +232,21 @@ class CryptoModule:
         data = self.get_json_and_free_mem(ptr)
         return data
 
+    def pubkey_package_tweak(self, pubkey_package, tweak_by):
+        ptr = self.lib.pubkey_package_tweak(
+            dict_to_buffer(pubkey_package),
+            dict_to_buffer(tweak_by)
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
+
+    def key_package_tweak(self, key_package, tweak_by):
+        ptr = self.lib.key_package_tweak(
+            dict_to_buffer(key_package),
+            dict_to_buffer(tweak_by)
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
 
 class CryptoModuleWithTweak(CryptoModule):
     def __init__(self, curve_name):
