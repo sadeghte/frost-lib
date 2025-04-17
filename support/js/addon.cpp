@@ -468,6 +468,23 @@ Napi::Object KeyPackageTweak(const Napi::CallbackInfo& info) {
 
 #else
 
+Napi::Object PubkeyTweak(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+	// Check the number of arguments
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "pubkey_tweak needs two arguments").ThrowAsJavaScriptException();
+        return env.Null().As<Napi::Object>();
+    }
+	
+	const uint8_t *pubkey = info[0].As<Napi::Buffer<uint8_t>>().Data();
+	const uint8_t *tweak = info[1].As<Napi::Buffer<uint8_t>>().Data();
+
+	const uint8_t *ptr = pubkey_tweak(pubkey, tweak);
+
+    return getJsonAndFreeMem(info, ptr);
+}
+
 Napi::Object PubkeyPackageTweak(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -531,6 +548,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "pubkey_package_tweak"), Napi::Function::New(env, PubkeyPackageTweak));
     exports.Set(Napi::String::New(env, "key_package_tweak"), Napi::Function::New(env, KeyPackageTweak));
 #else
+    exports.Set(Napi::String::New(env, "pubkey_tweak"), Napi::Function::New(env, PubkeyTweak));
     exports.Set(Napi::String::New(env, "pubkey_package_tweak"), Napi::Function::New(env, PubkeyPackageTweak));
     exports.Set(Napi::String::New(env, "key_package_tweak"), Napi::Function::New(env, KeyPackageTweak));
 #endif

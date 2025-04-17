@@ -1,3 +1,4 @@
+use frost_core::Group;
 // use frost_core::keys::{
 // 	SecretShare,
 // 	VerifiableSecretSharingCommitment
@@ -296,6 +297,63 @@ pub  extern "C" fn aggregate(signing_package_buf: *const u8, signature_shares_bu
 	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
 	let group_signature: frost::Signature = RET_ERR!(frost::aggregate(&signing_package, &signature_shares, &pubkey_package));
 	RET_ERR!(to_json_buff(&group_signature))
+}
+
+#[no_mangle]
+pub extern "C" fn pubkey_tweak(pubkey_buf: *const u8, tweak_by_buf: *const u8) -> *const u8 {
+	let pubkey: VerifyingKey = RET_ERR!(from_json_buff(pubkey_buf));
+    let t: SerializableScalar = RET_ERR!(from_json_buff(tweak_by_buf));
+    let t_pub = frost::Secp256K1Group::generator() * t.0;
+
+    let pubkey_tweaked =
+        VerifyingKey::new(pubkey.to_element() + t_pub);
+
+    RET_ERR!(to_json_buff(&pubkey_tweaked))
+}
+
+#[no_mangle]
+pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, tweak_by_buf: *const u8) -> *const u8 {
+	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
+    let t: SerializableScalar = RET_ERR!(from_json_buff(tweak_by_buf));
+
+    let t_pub = frost::Secp256K1Group::generator() * t.0;
+
+    let verifying_key =
+        VerifyingKey::new(pubkey_package.verifying_key().to_element() + t_pub);
+    let verifying_shares: BTreeMap<_, _> = pubkey_package
+        .verifying_shares()
+        .iter()
+        .map(|(i, vs)| {
+            let vs = VerifyingShare::new(vs.to_element() + t_pub);
+            (*i, vs)
+        })
+        .collect();
+
+	let pubkey_package_tweaked = PublicKeyPackage::new(verifying_shares, verifying_key);
+	RET_ERR!(to_json_buff(&pubkey_package_tweaked))
+}
+
+#[no_mangle]
+pub extern "C" fn key_package_tweak(key_package_buf: *const u8, tweak_by_buf: *const u8) -> *const u8 {
+	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
+    let t: SerializableScalar = RET_ERR!(from_json_buff(tweak_by_buf));
+
+    let t_pub = frost::Secp256K1Group::generator() * t.0;
+
+    let verifying_key = VerifyingKey::new(key_package.verifying_key().to_element() + t_pub);
+    let signing_share = SigningShare::new(key_package.signing_share().to_scalar() + t.0);
+    let verifying_share =
+        VerifyingShare::new(key_package.verifying_share().to_element() + t_pub); 
+
+    let key_package_tweaked = KeyPackage::new(
+        *key_package.identifier(), 
+        signing_share, 
+        verifying_share, 
+        verifying_key, 
+        *key_package.min_signers()
+    );
+
+	RET_ERR!(to_json_buff(&key_package_tweaked))
 }
 
 #[no_mangle]

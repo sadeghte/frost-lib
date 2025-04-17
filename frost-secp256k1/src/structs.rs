@@ -11,7 +11,8 @@ use frost_secp256k1::{
 	Secp256K1Sha256 as E
 };
 
-
+#[allow(dead_code)]
+pub type Scalar = frost_core::Scalar<E>;
 pub type SerializableScalar = frost_core::serialization::SerializableScalar<E>;
 
 #[derive(Serialize, Deserialize)]

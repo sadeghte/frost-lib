@@ -20,7 +20,7 @@ def dict_to_buffer(data):
     return ctypes.cast(buffer, ctypes.POINTER(ctypes.c_uint8))
 
 
-class CryptoModule:
+class BaseCryptoModule:
 
     def __init__(self, curve_name):
         if curve_name not in self.get_curves():
@@ -86,14 +86,6 @@ class CryptoModule:
         lib.verify_group_signature.argtypes = [ctypes.POINTER(
             ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
         lib.verify_group_signature.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.pubkey_package_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
-        lib.pubkey_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.key_package_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
-        lib.key_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
 
         lib.mem_free.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
 
@@ -232,6 +224,31 @@ class CryptoModule:
         data = self.get_json_and_free_mem(ptr)
         return data
 
+
+class WithCustomTweak(BaseCryptoModule):
+    def __init__(self, curve_name):
+        super().__init__(curve_name)
+        
+        self.lib.pubkey_tweak.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+        self.lib.pubkey_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
+        
+        self.lib.pubkey_package_tweak.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+        self.lib.pubkey_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
+
+        self.lib.key_package_tweak.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+        self.lib.key_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
+        
+    def pubkey_tweak(self, pubkey, tweak_by):
+        ptr = self.lib.pubkey_tweak(
+            dict_to_buffer(pubkey),
+            dict_to_buffer(tweak_by)
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
+        
     def pubkey_package_tweak(self, pubkey_package, tweak_by):
         ptr = self.lib.pubkey_package_tweak(
             dict_to_buffer(pubkey_package),
@@ -248,7 +265,8 @@ class CryptoModule:
         data = self.get_json_and_free_mem(ptr)
         return data
 
-class CryptoModuleWithTweak(CryptoModule):
+
+class Secp256k1_TR(BaseCryptoModule):
     def __init__(self, curve_name):
         super().__init__(curve_name)
 
@@ -318,12 +336,11 @@ class CryptoModuleWithTweak(CryptoModule):
         return data
 
 
-ed25519 = CryptoModule('ed25519')
-secp256k1 = CryptoModule('secp256k1')
-secp256k1_tr = CryptoModuleWithTweak('secp256k1_tr')
+ed25519 = WithCustomTweak('ed25519')
+secp256k1 = WithCustomTweak('secp256k1')
+secp256k1_tr = Secp256k1_TR('secp256k1_tr')
 
-__all__ = ['ed25519', 'secp256k1', 'secp256k1_tr',
-           'CryptoModule', 'CryptoModuleWithTweak']
+__all__ = ['ed25519', 'secp256k1', 'secp256k1_tr']
 
 if __name__ == "__main__":
     pass

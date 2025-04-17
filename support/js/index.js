@@ -141,17 +141,47 @@ const secp256k1 = buildModule(secp256k1_addon);
 const secp256k1_tr = buildModule(secp256k1_tr_addon);
 
 Object.assign(ed25519, {
-    pubkeyPackageTweak: function(pubkeyPackage, merkle_root) {
+    pubkeyTweak: function(pubkey, tweak_by) {
+        return this.__nativeModule.pubkey_tweak(
+            dictToBuff(pubkey), 
+            dictToBuff(tweak_by)
+        )
+    },
+
+    pubkeyPackageTweak: function(pubkeyPackage, tweak_by) {
         return this.__nativeModule.pubkey_package_tweak(
             dictToBuff(pubkeyPackage), 
-            !!merkle_root ? dictToBuff(merkle_root) : null
+            dictToBuff(tweak_by)
         )
     },
     
-    keyPackageTweak: function(keyPackage, merkle_root) {
+    keyPackageTweak: function(keyPackage, tweak_by) {
         return this.__nativeModule.key_package_tweak(
             dictToBuff(keyPackage), 
-            !!merkle_root ? dictToBuff(merkle_root) : null
+            dictToBuff(tweak_by)
+        )
+    },
+});
+
+Object.assign(secp256k1, {
+    pubkeyTweak: function(pubkey, tweak_by) {
+        return this.__nativeModule.pubkey_tweak(
+            dictToBuff(pubkey), 
+            dictToBuff(tweak_by)
+        )
+    },
+
+    pubkeyPackageTweak: function(pubkeyPackage, tweak_by) {
+        return this.__nativeModule.pubkey_package_tweak(
+            dictToBuff(pubkeyPackage), 
+            dictToBuff(tweak_by)
+        )
+    },
+    
+    keyPackageTweak: function(keyPackage, tweak_by) {
+        return this.__nativeModule.key_package_tweak(
+            dictToBuff(keyPackage), 
+            dictToBuff(tweak_by)
         )
     },
 });

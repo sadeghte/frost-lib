@@ -10,14 +10,13 @@ use frost_ed25519::{
 	round1, round2::{self, SignatureShare}, Identifier, SigningKey, SigningPackage, VerifyingKey, Signature
 };
 use rand::thread_rng;
-use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, Scalar, SerializableScalar};
+use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
 use std::collections::BTreeMap;
 use hex;
 use serde::{
 	Serialize, 
 	Deserialize,
 };
-use sha2::{Digest, Sha256};
 use utils::{str_to_forgotten_buf, from_json_buff, to_json_buff, b2id};
 mod structs;
 mod utils;
@@ -294,28 +293,24 @@ pub  extern "C" fn aggregate(signing_package_buf: *const u8, signature_shares_bu
 	RET_ERR!(to_json_buff(&group_signature))
 }
 
-fn sha256_hash(input: Vec<u8>) -> Vec<u8> {
-    let mut hasher = Sha256::new();    // Create a new SHA-256 hasher
-    hasher.update(input);              // Feed the input data into the hasher
-    let result = hasher.finalize();    // Compute the hash
-    result.to_vec()                    // Convert the hash to Vec<u8>
-}
+#[no_mangle]
+pub extern "C" fn pubkey_tweak(pubkey_buf: *const u8, tweak_by_buf: *const u8) -> *const u8 {
+	let pubkey: VerifyingKey = RET_ERR!(from_json_buff(pubkey_buf));
+    let t: SerializableScalar = RET_ERR!(from_json_buff(tweak_by_buf));
+    let t_pub = frost::Ed25519Group::generator() * t.0;
 
-fn hash_to_scalar(input: Vec<u8>) -> Scalar {
-    let hash = sha256_hash(input);
-    Scalar::from_bytes_mod_order(hash.as_slice().try_into().expect("32 bytes"))
+    let pubkey_tweaked =
+        VerifyingKey::new(pubkey.to_element() + t_pub);
+
+    RET_ERR!(to_json_buff(&pubkey_tweaked))
 }
 
 #[no_mangle]
-pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
+pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, tweak_by_buf: *const u8) -> *const u8 {
 	let pubkey_package: keys::PublicKeyPackage = RET_ERR!(from_json_buff(pubkey_package_buf));
-    let merkle_root: Vec<u8> = {
-        let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
-        RET_ERR!(hex::decode(hex_str))
-    };
-    let t = hash_to_scalar(merkle_root);
+    let t: SerializableScalar = RET_ERR!(from_json_buff(tweak_by_buf));
 
-    let t_pub = frost::Ed25519Group::generator() * t;
+    let t_pub = frost::Ed25519Group::generator() * t.0;
 
     let verifying_key =
         VerifyingKey::new(pubkey_package.verifying_key().to_element() + t_pub);
@@ -333,18 +328,14 @@ pub  extern "C" fn pubkey_package_tweak(pubkey_package_buf: *const u8, merkle_ro
 }
 
 #[no_mangle]
-pub extern "C" fn key_package_tweak(key_package_buf: *const u8, merkle_root_buf: *const u8) -> *const u8 {
+pub extern "C" fn key_package_tweak(key_package_buf: *const u8, tweak_by_buf: *const u8) -> *const u8 {
 	let key_package: keys::KeyPackage = RET_ERR!(from_json_buff(key_package_buf));
-    let merkle_root: Vec<u8> = {
-        let hex_str: String = RET_ERR!(from_json_buff(merkle_root_buf));
-        RET_ERR!(hex::decode(hex_str))
-    };
-    let t = hash_to_scalar(merkle_root);
+    let t: SerializableScalar = RET_ERR!(from_json_buff(tweak_by_buf));
 
-    let t_pub = frost::Ed25519Group::generator() * t;
+    let t_pub = frost::Ed25519Group::generator() * t.0;
 
     let verifying_key = VerifyingKey::new(key_package.verifying_key().to_element() + t_pub);
-    let signing_share = SigningShare::new(key_package.signing_share().to_scalar() + t);
+    let signing_share = SigningShare::new(key_package.signing_share().to_scalar() + t.0);
     let verifying_share =
         VerifyingShare::new(key_package.verifying_share().to_element() + t_pub); 
 
