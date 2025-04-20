@@ -1,12 +1,16 @@
 [package]
-name = "frost-secp256k1-tr-lib"
+name = "frost-secp256k1-tr"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
-frost-core = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
-frost-secp256k1-tr = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
+frost-core = { git = "https://github.com/sadeghte/frost.git", features = [
+    "serde",
+] }
+frost-secp256k1-tr = { git = "https://github.com/sadeghte/frost.git", features = [
+    "serde",
+] }
 
 ffi-support = "0.4.4"
 libc = "0.2.161"
@@ -18,8 +22,8 @@ serdect = "0.2.0"
 serde_json = "1.0.115"
 
 [build-dependencies]
-cbindgen = "0.27"  # Latest version of cbindgen
+cbindgen = "0.27" # Latest version of cbindgen
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 name = "frost_secp256k1_tr"

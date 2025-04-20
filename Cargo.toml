@@ -1,7 +1,0 @@
-[workspace]
-members = [
-    # "serializable",
-    "frost-ed25519", 
-    "frost-secp256k1",
-    "frost-secp256k1-tr"
-]

@@ -1,12 +1,16 @@
 [package]
-name = "frost-ed25519-lib"
+name = "frost-ed25519"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
-frost-core = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
-frost-ed25519 = { git = "https://github.com/sadeghte/frost.git", features = ["serde"] }
+frost-core = { git = "https://github.com/sadeghte/frost.git", features = [
+    "serde",
+] }
+frost-ed25519 = { git = "https://github.com/sadeghte/frost.git", features = [
+    "serde",
+] }
 
 ffi-support = "0.4.4"
 libc = "0.2.161"
@@ -19,8 +23,8 @@ serde_json = "1.0.115"
 sha2 = "0.10.8"
 
 [build-dependencies]
-cbindgen = "0.27"  # Latest version of cbindgen
+cbindgen = "0.27" # Latest version of cbindgen
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 name = "frost_ed25519"

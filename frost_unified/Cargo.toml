@@ -1,0 +1,13 @@
+[package]
+name = "frost-unified"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "frost"
+crate-type = ["cdylib"] # Compile as a shared library
+
+[dependencies]
+frost-ed25519 = { path = "../frost-ed25519" }
+frost-secp256k1 = { path = "../frost-secp256k1" }
+frost-secp256k1-tr = { path = "../frost-secp256k1-tr" }
