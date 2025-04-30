@@ -1,7 +1,7 @@
 import ctypes
 import json
 
-from ._frost import lib, ffi
+from .secp256k1_tr import lib, ffi
 from .types import Part1ResultT, Part2ResultT, Part3ResultT
 
 
