@@ -3,53 +3,77 @@ use serde::{
 	Serialize, 
 	de::DeserializeOwned
 };
+use std::ffi::{c_char, CStr, CString};
 
-pub fn str_to_forgotten_buf(str: String) -> *const u8 {
-	let str_bytes = str.as_bytes();
-    let str_len = str_bytes.len();
+pub fn str_to_forgotten_buf(str: String) -> *const c_char {
+	// let str_bytes = str.as_bytes();
+    // let str_len = str_bytes.len();
 
-    // Create a buffer with 2 bytes for length, followed by the JSON content
-    let mut output = Vec::with_capacity(2 + str_len);
-    output.push((str_len >> 8) as u8);  // High byte of length
-    output.push(str_len as u8);         // Low byte of length
-    output.extend_from_slice(str_bytes);
+    // // Create a buffer with 2 bytes for length, followed by the JSON content
+    // let mut output = Vec::with_capacity(2 + str_len);
+    // output.push((str_len >> 8) as u8);  // High byte of length
+    // output.push(str_len as u8);         // Low byte of length
+    // output.extend_from_slice(str_bytes);
 
-    let ptr = output.as_ptr();
-    std::mem::forget(output);  // Prevent Rust from freeing the memory
+    // let ptr = output.as_ptr();
+    // std::mem::forget(output);  // Prevent Rust from freeing the memory
 
+    // ptr
+
+    let c_string = CString::new(str).expect("CString::new failed");
+    let ptr = c_string.into_raw() as *const c_char;
+    // std::mem::forget(c_string);
     ptr
 }
 
-pub fn to_json_buff<T: Serialize>(value: &T) -> Result<*const u8, serde_json::Error> {
+pub fn to_json_buff<T: Serialize>(value: &T) -> Result<*const c_char, serde_json::Error> {
     // Serialize the value to JSON
     let json = serde_json::to_string(value)?;
     Ok(str_to_forgotten_buf(json))
 }
 
-pub fn from_json_buff<T: DeserializeOwned>(buffer: *const u8) -> Result<T, Box<dyn std::error::Error>> {
-	let type_name = std::any::type_name::<T>();
-    // Check for null pointer
+// pub fn from_json_buff<T: DeserializeOwned>(buffer: *const c_char) -> Result<T, Box<dyn std::error::Error>> {
+// 	let type_name = std::any::type_name::<T>();
+//     // Check for null pointer
+//     if buffer.is_null() {
+//         return Err(format!("{}: Buffer pointer is null", type_name).into());
+//     }
+
+//     unsafe {
+//         // Read the first two bytes to determine the JSON length
+//         let high_byte = *buffer;
+//         let low_byte = *buffer.add(1);
+//         let json_len = ((high_byte as usize) << 8) | (low_byte as usize);
+
+//         // Create a slice from the buffer to hold the JSON data
+//         let json_slice = std::slice::from_raw_parts(buffer.add(2), json_len);
+
+//         // Convert the JSON slice to a string
+//         let json_str = std::str::from_utf8(json_slice).map_err(|e| format!("{}: Invalid UTF-8 sequence: {}", type_name, e))?;
+
+//         // Deserialize the JSON string into the specified type
+//         let value = serde_json::from_str::<T>(json_str).map_err(|e| format!("{}: Deserialization failed: {}", type_name, e))?;
+
+// 		Ok(value)
+//     }
+// }
+
+pub fn from_json_buff<T: DeserializeOwned>(buffer: *const c_char) -> Result<T, Box<dyn std::error::Error>> {
+    let type_name = std::any::type_name::<T>();
     if buffer.is_null() {
         return Err(format!("{}: Buffer pointer is null", type_name).into());
     }
-
-    unsafe {
-        // Read the first two bytes to determine the JSON length
-        let high_byte = *buffer;
-        let low_byte = *buffer.add(1);
-        let json_len = ((high_byte as usize) << 8) | (low_byte as usize);
-
-        // Create a slice from the buffer to hold the JSON data
-        let json_slice = std::slice::from_raw_parts(buffer.add(2), json_len);
-
-        // Convert the JSON slice to a string
-        let json_str = std::str::from_utf8(json_slice).map_err(|e| format!("{}: Invalid UTF-8 sequence: {}", type_name, e))?;
-
-        // Deserialize the JSON string into the specified type
-        let value = serde_json::from_str::<T>(json_str).map_err(|e| format!("{}: Deserialization failed: {}", type_name, e))?;
-
-		Ok(value)
+    let c_str = unsafe { CStr::from_ptr(buffer) };
+    let bytes = c_str.to_bytes();
+    if bytes.contains(&0) {
+        return Err(format!("{}: Input contains embedded null byte", type_name).into());
     }
+    let json_str = c_str
+        .to_str()
+        .map_err(|e| format!("{}: Invalid UTF-8 sequence: {}", type_name, e))?;
+    let value = serde_json::from_str::<T>(json_str)
+        .map_err(|e| format!("{}: Deserialization failed: {}", type_name, e))?;
+    Ok(value)
 }
 
 #[allow(dead_code)]

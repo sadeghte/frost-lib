@@ -1,21 +1,14 @@
 import ctypes
 import json
 
-from ._frost import lib
+from ._frost import lib, ffi
 from .types import Part1ResultT, Part2ResultT, Part3ResultT
 
 
 def dict_to_buffer(data):
     json_str = json.dumps(data)
     json_bytes = json_str.encode("utf-8")
-    json_len = len(json_bytes)
-
-    buffer = ctypes.create_string_buffer(2 + json_len)
-    buffer[0] = (json_len >> 8) & 0xFF
-    buffer[1] = json_len & 0xFF
-    buffer[2:] = json_bytes
-
-    return ctypes.cast(buffer, ctypes.POINTER(ctypes.c_uint8))
+    return ffi.new("char[]", json_bytes + b"\0");
 
 
 class BaseCryptoModule:
@@ -24,114 +17,40 @@ class BaseCryptoModule:
             raise ValueError(
                 f"Invalid curve name '{curve_name}'. valid curve names: {self.get_curves()}"
             )
-
-        lib.num_to_id.argtypes = [ctypes.c_int64]
-        lib.num_to_id.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.dkg_part1.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.c_uint16,
-            ctypes.c_uint16,
-        ]
-        lib.dkg_part1.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.verify_proof_of_knowledge.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.verify_proof_of_knowledge.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.dkg_part2.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.dkg_part2.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.dkg_verify_secret_share.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.dkg_verify_secret_share.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.dkg_part3.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.dkg_part3.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.keys_generate_with_dealer.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.keys_split.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.c_uint16,
-            ctypes.c_uint16,
-        ]
-        lib.keys_split.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.key_package_from.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-        lib.key_package_from.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.round1_commit.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-        lib.round1_commit.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.signing_package_new.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.signing_package_new.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.round2_sign.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.round2_sign.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.verify_share.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.verify_share.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.aggregate.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.aggregate.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.verify_group_signature.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        lib.verify_group_signature.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        lib.mem_free.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-
+        self.ffi = ffi
         self.lib = lib
 
     @staticmethod
     def get_curves() -> list[str]:
         return ["ed25519", "secp256k1", "secp256k1_tr"]
-
+    
     def get_json_and_free_mem(self, ptr):
-        u16_buffer = ctypes.string_at(ptr, 2)  # Read the first two bytes
-        json_len = (u16_buffer[0] << 8) | u16_buffer[1]
-        json_buffer = ctypes.string_at(ctypes.addressof(ptr.contents) + 2, json_len)
+        if ptr == ffi.NULL:
+            raise ValueError("Received null pointer from Rust function")
+        
         try:
-            # TODO: some times json_buffer is not valid json string. for example if you padd identifier instead of SigningPackage and deserialization error occuring
+            # Read null-terminated C string
+            json_buffer = ffi.string(ptr).decode('utf-8')
+            print("json_buffer: ", json_buffer)
+            if not json_buffer:
+                raise ValueError("Empty JSON buffer returned")
+            
+            # Parse JSON
             data = json.loads(json_buffer)
-            if isinstance(data, dict) and "error" in data and data["error"] is not None:
-                raise ValueError(data["error"])
+            if isinstance(data, dict) and 'error' in data and data['error']:
+                raise ValueError(f"Rust error: {data['error']}")
             return data
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}")
+        except UnicodeDecodeError as e:
+            raise ValueError(f"Invalid UTF-8 data: {e}")
         finally:
-            self.lib.mem_free(ptr)
+            lib.mem_free(ptr)
+            
+    def get_id(self, identifier):
+        ptr = self.lib.get_id(dict_to_buffer(identifier))
+        data = self.get_json_and_free_mem(ptr)
+        return data
 
     def num_to_id(self, num):
         ptr = self.lib.num_to_id(num)
@@ -266,24 +185,6 @@ class WithCustomTweak(BaseCryptoModule):
     def __init__(self, curve_name):
         super().__init__(curve_name)
 
-        self.lib.pubkey_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.pubkey_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        self.lib.pubkey_package_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.pubkey_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        self.lib.key_package_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.key_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
     def pubkey_tweak(self, pubkey, tweak_by):
         ptr = self.lib.pubkey_tweak(dict_to_buffer(pubkey), dict_to_buffer(tweak_by))
         data = self.get_json_and_free_mem(ptr)
@@ -307,34 +208,6 @@ class WithCustomTweak(BaseCryptoModule):
 class Secp256k1_TR(BaseCryptoModule):
     def __init__(self, curve_name):
         super().__init__(curve_name)
-
-        self.lib.round2_sign_with_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.round2_sign_with_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        self.lib.aggregate_with_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.aggregate_with_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        self.lib.pubkey_package_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.pubkey_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
-
-        self.lib.key_package_tweak.argtypes = [
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-        self.lib.key_package_tweak.restype = ctypes.POINTER(ctypes.c_uint8)
 
     def round2_sign_with_tweak(
         self, signing_package, signer_nonces, key_package, merkle_root=None
@@ -377,13 +250,15 @@ class Secp256k1_TR(BaseCryptoModule):
         return data
 
 
-ed25519 = WithCustomTweak("ed25519")
+# ed25519 = WithCustomTweak("ed25519")
 # secp256k1 = WithCustomTweak("secp256k1")
-# secp256k1_tr = Secp256k1_TR("secp256k1_tr")
+secp256k1_tr = Secp256k1_TR("secp256k1_tr")
 
 __all__ = [
-    "ed25519",
-]  # "secp256k1", "secp256k1_tr"]
+    # "ed25519",
+    # "secp256k1", 
+    "secp256k1_tr"
+]
 
 if __name__ == "__main__":
     pass
