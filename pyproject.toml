@@ -19,7 +19,7 @@ classifiers = [
 dependencies = ["cffi>=1.15.0", "maturin>=1.8.3"]
 
 [tool.maturin]
-manifest-path = "frost_unified/Cargo.toml"
+manifest-path = "frost-secp256k1-tr/Cargo.toml"
 python-source = "python"
-module-name = "frost._frost"
+module-name = "frost_lib.secp256k1_tr"
 bindings = "cffi"
