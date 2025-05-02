@@ -3,7 +3,7 @@ use std::path::Path;
 
 fn main() {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let output_file = Path::new(&crate_dir).join("frost-ed25519-lib.h");
+    let output_file = Path::new(&crate_dir).join("target/header.h");
 
     // cbindgen::generate(crate_dir)
     //     .expect("Unable to generate bindings")
