@@ -29,9 +29,11 @@ impl From<R1SecretPackage> for SerializableR1SecretPackage {
         SerializableR1SecretPackage {
             // identifier: id,
             identifier: secret_package.identifier.clone(),
-            coefficients: secret_package.coefficients().into_iter().map(
-                frost_core::serialization::SerializableScalar
-            ).collect(),
+            coefficients: secret_package
+            .coefficients()
+            .iter()
+            .map(|scalar| frost_core::serialization::SerializableScalar(*scalar))
+            .collect(),
             commitment: secret_package.commitment.clone(),
             min_signers: secret_package.min_signers.clone(),
             max_signers: secret_package.max_signers.clone(),
@@ -41,13 +43,13 @@ impl From<R1SecretPackage> for SerializableR1SecretPackage {
 
 impl From<SerializableR1SecretPackage> for R1SecretPackage {
     fn from(serializable: SerializableR1SecretPackage) -> R1SecretPackage {
-        R1SecretPackage::new(
-            serializable.identifier, 
-            serializable.coefficients.into_iter().map(|s| s.0).collect(), 
-            serializable.commitment, 
-            serializable.min_signers, 
-            serializable.max_signers
-        )
+        R1SecretPackage {
+            identifier: serializable.identifier, 
+            coefficients: serializable.coefficients.into_iter().map(|s| s.0).collect(), 
+            commitment: serializable.commitment, 
+            min_signers: serializable.min_signers, 
+            max_signers: serializable.max_signers
+        }
     }
 }
 
@@ -66,7 +68,7 @@ impl From<R2SecretPackage> for SerializableR2SecretPackage {
             // identifier: id,
             identifier: secret_package.identifier().clone(),
             commitment: secret_package.commitment().clone(),
-			secret_share: frost_core::serialization::SerializableScalar(secret_package.secret_share()),
+            secret_share: frost_core::serialization::SerializableScalar(secret_package.secret_share().clone()),
             min_signers: secret_package.min_signers().clone(),
             max_signers: secret_package.max_signers().clone(),
         }
@@ -75,12 +77,12 @@ impl From<R2SecretPackage> for SerializableR2SecretPackage {
 
 impl From<SerializableR2SecretPackage> for R2SecretPackage {
     fn from(serializable: SerializableR2SecretPackage) -> R2SecretPackage {
-        R2SecretPackage::new(
-            serializable.identifier, 
-            serializable.commitment, 
-            serializable.secret_share.0, 
-            serializable.min_signers, 
-            serializable.max_signers
-        )
+        R2SecretPackage {
+            identifier: serializable.identifier, 
+            commitment: serializable.commitment, 
+            secret_share: serializable.secret_share.0, 
+            min_signers: serializable.min_signers, 
+            max_signers: serializable.max_signers
+        }
     }
 }
