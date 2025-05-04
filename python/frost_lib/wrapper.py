@@ -1,14 +1,13 @@
-import ctypes
 import json
 
-from .secp256k1_tr import lib, ffi
+from .secp256k1_tr import ffi, lib
 from .types import Part1ResultT, Part2ResultT, Part3ResultT
 
 
 def dict_to_buffer(data):
     json_str = json.dumps(data)
     json_bytes = json_str.encode("utf-8")
-    return ffi.new("char[]", json_bytes + b"\0");
+    return ffi.new("char[]", json_bytes + b"\0")
 
 
 class BaseCryptoModule:
@@ -23,21 +22,20 @@ class BaseCryptoModule:
     @staticmethod
     def get_curves() -> list[str]:
         return ["ed25519", "secp256k1", "secp256k1_tr"]
-    
+
     def get_json_and_free_mem(self, ptr):
         if ptr == ffi.NULL:
             raise ValueError("Received null pointer from Rust function")
-        
+
         try:
             # Read null-terminated C string
-            json_buffer = ffi.string(ptr).decode('utf-8')
-            print("json_buffer: ", json_buffer)
+            json_buffer = ffi.string(ptr).decode("utf-8")
             if not json_buffer:
                 raise ValueError("Empty JSON buffer returned")
-            
+
             # Parse JSON
             data = json.loads(json_buffer)
-            if isinstance(data, dict) and 'error' in data and data['error']:
+            if isinstance(data, dict) and "error" in data and data["error"]:
                 raise ValueError(f"Rust error: {data['error']}")
             return data
         except json.JSONDecodeError as e:
@@ -46,7 +44,7 @@ class BaseCryptoModule:
             raise ValueError(f"Invalid UTF-8 data: {e}")
         finally:
             lib.mem_free(ptr)
-            
+
     def get_id(self, identifier):
         ptr = self.lib.get_id(dict_to_buffer(identifier))
         data = self.get_json_and_free_mem(ptr)
@@ -60,8 +58,8 @@ class BaseCryptoModule:
     def dkg_part1(self, identifier, max_signers, min_signers) -> Part1ResultT:
         ptr = self.lib.dkg_part1(
             dict_to_buffer(identifier),
-            ctypes.c_uint16(max_signers),
-            ctypes.c_uint16(min_signers),
+            max_signers,
+            min_signers,
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -103,17 +101,15 @@ class BaseCryptoModule:
         return data
 
     def keys_generate_with_dealer(self, max_signers, min_signers):
-        ptr = self.lib.keys_generate_with_dealer(
-            ctypes.c_uint16(max_signers), ctypes.c_uint16(min_signers)
-        )
+        ptr = self.lib.keys_generate_with_dealer(max_signers, min_signers)
         data = self.get_json_and_free_mem(ptr)
         return data
 
     def keys_split(self, secret, max_signers, min_signers):
         ptr = self.lib.keys_split(
             dict_to_buffer(secret),
-            ctypes.c_uint16(max_signers),
-            ctypes.c_uint16(min_signers),
+            max_signers,
+            min_signers,
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -236,7 +232,7 @@ class Secp256k1_TR(BaseCryptoModule):
     def pubkey_package_tweak(self, pubkey_package, merkle_root=None):
         ptr = self.lib.pubkey_package_tweak(
             dict_to_buffer(pubkey_package),
-            None if merkle_root is None else dict_to_buffer(merkle_root),
+            "" if merkle_root is None else dict_to_buffer(merkle_root),
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -244,7 +240,7 @@ class Secp256k1_TR(BaseCryptoModule):
     def key_package_tweak(self, key_package, merkle_root=None):
         ptr = self.lib.key_package_tweak(
             dict_to_buffer(key_package),
-            None if merkle_root is None else dict_to_buffer(merkle_root),
+            "" if merkle_root is None else dict_to_buffer(merkle_root),
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -256,7 +252,7 @@ secp256k1_tr = Secp256k1_TR("secp256k1_tr")
 
 __all__ = [
     # "ed25519",
-    # "secp256k1", 
+    # "secp256k1",
     "secp256k1_tr"
 ]
 
