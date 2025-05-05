@@ -212,7 +212,7 @@ class Secp256k1_TR(BaseCryptoModule):
             dict_to_buffer(signing_package),
             dict_to_buffer(signer_nonces),
             dict_to_buffer(key_package),
-            None if merkle_root is None else dict_to_buffer(merkle_root),
+            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -224,7 +224,7 @@ class Secp256k1_TR(BaseCryptoModule):
             dict_to_buffer(signing_package),
             dict_to_buffer(signature_shares),
             dict_to_buffer(pubkey_package),
-            None if merkle_root is None else dict_to_buffer(merkle_root),
+            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -232,7 +232,7 @@ class Secp256k1_TR(BaseCryptoModule):
     def pubkey_package_tweak(self, pubkey_package, merkle_root=None):
         ptr = self.lib.pubkey_package_tweak(
             dict_to_buffer(pubkey_package),
-            "" if merkle_root is None else dict_to_buffer(merkle_root),
+            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
         data = self.get_json_and_free_mem(ptr)
         return data
@@ -240,7 +240,7 @@ class Secp256k1_TR(BaseCryptoModule):
     def key_package_tweak(self, key_package, merkle_root=None):
         ptr = self.lib.key_package_tweak(
             dict_to_buffer(key_package),
-            "" if merkle_root is None else dict_to_buffer(merkle_root),
+            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
         data = self.get_json_and_free_mem(ptr)
         return data
