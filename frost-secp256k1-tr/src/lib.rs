@@ -8,7 +8,7 @@ use frost_secp256k1_tr::{
 	Signature, SigningKey, SigningPackage, VerifyingKey
 };
 use rand::thread_rng;
-use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
+use structs::{SerializableKeyPair, SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
 use std::collections::BTreeMap;
 use hex;
 use serde::{
@@ -51,6 +51,20 @@ pub extern "C" fn num_to_id(num: c_ulonglong) -> *const c_char {
 	let identifier: Identifier = RET_ERR!(Identifier::deserialize(&padded_vec));
     print!("in rust: test done");
 	RET_ERR!(to_json_buff(&identifier))
+}
+
+#[no_mangle]
+pub extern "C" fn keypair_new() -> *const u8 {
+	let mut rng = thread_rng();
+    let signing_key = SigningKey::new(&mut rng);
+    let verifying_key = signing_key.into();
+
+    let result = SerializableKeyPair {
+        signing_key: frost_core::serialization::SerializableScalar(signing_key.to_scalar()),
+        verifying_key: verifying_key
+    };
+
+    RET_ERR!(to_json_buff(&result))
 }
 
 #[derive(Serialize, Deserialize)]

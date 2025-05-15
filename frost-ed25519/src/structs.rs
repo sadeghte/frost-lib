@@ -8,12 +8,19 @@ use frost_ed25519::{
 			round2::SecretPackage as R2SecretPackage
 		}
 	},
-	Ed25519Sha512 as E
+	Ed25519Sha512 as E,
+    VerifyingKey
 };
 
 #[allow(dead_code)]
 pub type Scalar = frost_core::Scalar<E>;
 pub type SerializableScalar = frost_core::serialization::SerializableScalar<E>;
+
+#[derive(Serialize, Deserialize)]
+pub struct SerializableKeyPair {
+    pub signing_key: SerializableScalar,
+    pub verifying_key: VerifyingKey
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct SerializableR1SecretPackage {

@@ -10,7 +10,7 @@ use frost_ed25519::{
 	round1, round2::{self, SignatureShare}, Identifier, SigningKey, SigningPackage, VerifyingKey, Signature
 };
 use rand::thread_rng;
-use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
+use structs::{SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar, SerializableKeyPair};
 use std::collections::BTreeMap;
 use hex;
 use serde::{
@@ -45,6 +45,20 @@ pub extern "C" fn num_to_id(num: u64) -> *const u8 {
 	bytes.resize(32, 0);
 	let identifier: Identifier = RET_ERR!(Identifier::deserialize(&bytes));
 	RET_ERR!(to_json_buff(&identifier))
+}
+
+#[no_mangle]
+pub extern "C" fn keypair_new() -> *const u8 {
+	let mut rng = thread_rng();
+    let signing_key = SigningKey::new(&mut rng);
+    let verifying_key = signing_key.into();
+
+    let result = SerializableKeyPair {
+        signing_key: frost_core::serialization::SerializableScalar(signing_key.to_scalar()),
+        verifying_key: verifying_key
+    };
+
+    RET_ERR!(to_json_buff(&result))
 }
 
 #[derive(Serialize, Deserialize)]

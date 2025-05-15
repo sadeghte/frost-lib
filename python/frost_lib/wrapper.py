@@ -54,6 +54,11 @@ class BaseCryptoModule:
         ptr = self.lib.num_to_id(num)
         data = self.get_json_and_free_mem(ptr)
         return data
+    
+    def keypair_new(self):
+        ptr = self.lib.keypair_new()
+        data = self.get_json_and_free_mem(ptr)
+        return data
 
     def dkg_part1(self, identifier, max_signers, min_signers) -> Part1ResultT:
         ptr = self.lib.dkg_part1(
