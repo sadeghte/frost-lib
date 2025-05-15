@@ -35,6 +35,9 @@ class BaseCryptoModule:
         lib.num_to_id.argtypes = [ctypes.c_int64]
         lib.num_to_id.restype = ctypes.POINTER(ctypes.c_uint8)
 
+        lib.keypair_new.argtypes = []
+        lib.keypair_new.restype = ctypes.POINTER(ctypes.c_uint8)
+
         lib.dkg_part1.argtypes = [ctypes.POINTER(
             ctypes.c_uint8), ctypes.c_uint16, ctypes.c_uint16]
         lib.dkg_part1.restype = ctypes.POINTER(ctypes.c_uint8)
@@ -111,6 +114,11 @@ class BaseCryptoModule:
 
     def num_to_id(self, num):
         ptr = self.lib.num_to_id(num)
+        data = self.get_json_and_free_mem(ptr)
+        return data
+    
+    def keypair_new(self):
+        ptr = self.lib.keypair_new()
         data = self.get_json_and_free_mem(ptr)
         return data
 

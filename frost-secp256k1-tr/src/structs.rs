@@ -1,18 +1,21 @@
 use serde::{Serialize, Deserialize};
 use frost_secp256k1_tr::{
-	Identifier,
 	keys::{
-		VerifiableSecretSharingCommitment,
 		dkg::{
 			round1::SecretPackage as R1SecretPackage,
 			round2::SecretPackage as R2SecretPackage
-		}
-	},
-	Secp256K1Sha256TR as E
+		}, VerifiableSecretSharingCommitment
+	}, Identifier, Secp256K1Sha256TR as E, VerifyingKey
 };
 
 
 pub type SerializableScalar = frost_core::serialization::SerializableScalar<E>;
+
+#[derive(Serialize, Deserialize)]
+pub struct SerializableKeyPair {
+    pub signing_key: SerializableScalar,
+    pub verifying_key: VerifyingKey
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct SerializableR1SecretPackage {
