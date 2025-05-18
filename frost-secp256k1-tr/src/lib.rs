@@ -1,11 +1,7 @@
 use frost_secp256k1_tr::{
-	self as frost, 
-    keys:: {
-		self, dkg, PublicKeyPackage, SecretShare, SigningShare, Tweak,
-        KeyPackage, 
-        VerifiableSecretSharingCommitment, VerifyingShare
-	}, round1, round2::{self, SignatureShare}, Identifier,
-	Signature, SigningKey, SigningPackage, VerifyingKey
+	self as frost, keys:: {
+		self, dkg, KeyPackage, PublicKeyPackage, SecretShare, SigningShare, Tweak, VerifiableSecretSharingCommitment, VerifyingShare
+	}, round1, round2::{self, SignatureShare}, Identifier, Secp256K1Sha256TR, Signature, SigningKey, SigningPackage, VerifyingKey
 };
 use rand::thread_rng;
 use structs::{SerializableKeyPair, SerializableR1SecretPackage, SerializableR2SecretPackage, SerializableScalar};
@@ -58,6 +54,41 @@ pub extern "C" fn keypair_new() -> *const u8 {
     };
 
     RET_ERR!(to_json_buff(&result))
+}
+
+#[no_mangle]
+pub extern "C" fn single_sign(secret_buff: *const u8, msg_buff: *const u8) -> *const u8 {
+	let scalar: SerializableScalar = RET_ERR!(from_json_buff(secret_buff));
+	let secret: SigningKey = RET_ERR!(SigningKey::from_scalar(scalar.0));
+
+	let msg_hex: String = RET_ERR!(from_json_buff(msg_buff));
+	let message: Vec<u8> = RET_ERR!(hex::decode(msg_hex));
+
+	let rng = thread_rng();
+    let signature = secret.sign(rng, message.as_slice());
+
+    RET_ERR!(to_json_buff(&signature))
+}
+
+#[no_mangle]
+pub extern "C" fn single_verify(
+    signature_buff: *const u8, 
+    msg_buff: *const u8, 
+    pubkey_buff: *const u8
+) -> *const u8 {
+	let signature: frost_core::Signature<Secp256K1Sha256TR> = RET_ERR!(from_json_buff(signature_buff));
+
+    let msg_hex: String = RET_ERR!(from_json_buff(msg_buff));
+	let msg: Vec<u8> = RET_ERR!(hex::decode(msg_hex));
+
+	let pubkey: VerifyingKey = RET_ERR!(from_json_buff(pubkey_buff));
+    
+    let verified = match pubkey.verify(msg.as_slice(), &signature) {
+        Ok(()) => true,
+        Err(_e) => false   
+    };
+
+    RET_ERR!(to_json_buff(&verified))
 }
 
 #[derive(Serialize, Deserialize)]

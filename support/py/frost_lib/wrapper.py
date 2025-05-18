@@ -38,6 +38,16 @@ class BaseCryptoModule:
         lib.keypair_new.argtypes = []
         lib.keypair_new.restype = ctypes.POINTER(ctypes.c_uint8)
 
+        lib.single_sign.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)]
+        lib.single_sign.restype = ctypes.POINTER(ctypes.c_uint8)
+
+        lib.single_verify.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), 
+            ctypes.POINTER(ctypes.c_uint8),
+            ctypes.POINTER(ctypes.c_uint8)
+        ]
+        lib.single_verify.restype = ctypes.POINTER(ctypes.c_uint8)
+
         lib.dkg_part1.argtypes = [ctypes.POINTER(
             ctypes.c_uint8), ctypes.c_uint16, ctypes.c_uint16]
         lib.dkg_part1.restype = ctypes.POINTER(ctypes.c_uint8)
@@ -119,6 +129,23 @@ class BaseCryptoModule:
     
     def keypair_new(self):
         ptr = self.lib.keypair_new()
+        data = self.get_json_and_free_mem(ptr)
+        return data
+    
+    def single_sign(self, secret: str, msg: str):
+        ptr = self.lib.single_sign(
+            dict_to_buffer(secret),
+            dict_to_buffer(msg),
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
+    
+    def single_verify(self, signature: str, msg: str, pubkey):
+        ptr = self.lib.single_verify(
+            dict_to_buffer(signature),
+            dict_to_buffer(msg),
+            dict_to_buffer(pubkey),
+        )
         data = self.get_json_and_free_mem(ptr)
         return data
 
