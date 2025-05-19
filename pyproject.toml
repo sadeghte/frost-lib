@@ -4,11 +4,11 @@ build-backend = "maturin"
 
 [project]
 name = "frost-lib"
-version = "0.1.0"
+version = "0.3.0"
 description = "A Rust library with Python CFFI bindings"
 authors = [{ name = "Your Name", email = "your.email@example.com" }]
 
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -18,8 +18,9 @@ classifiers = [
 ]
 dependencies = [
     "bitcoin-utils~=0.6.8",
-    "cffi>=1.15.0",
+    "cffi>=1.16.0",
     "maturin>=1.8.3",
+    "pydantic~=2.10.6",
     "requests>=2.31.0",
 ]
 

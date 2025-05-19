@@ -23,16 +23,14 @@ for identifier in participants:
     )
     # print("result: ", result_part1)
 
-    round1_secret_packages[identifier] = result_part1["secret_package"]
+    round1_secret_packages[identifier] = result_part1.secret_package
 
     for receiver_identifier in participants:
         if receiver_identifier == identifier:
             continue
         if received_round1_packages.get(receiver_identifier) is None:
             received_round1_packages[receiver_identifier] = {}
-        received_round1_packages[receiver_identifier][identifier] = result_part1[
-            "package"
-        ]
+        received_round1_packages[receiver_identifier][identifier] = result_part1.package
 
 """
 ============================================================================

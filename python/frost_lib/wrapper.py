@@ -1,7 +1,18 @@
 import json
 
 from .secp256k1_tr import ffi, lib
-from .types import Part1ResultT, Part2ResultT, Part3ResultT
+from .types import (
+    BaseModel,
+    DKGPart1Package,
+    DKGPart1Result,
+    DKGPart1Secret,
+    DKGPart2Package,
+    DKGPart2Result,
+    DKGPart2Secret,
+    DKGPart3Result,
+    HexStr,
+    KeyPair,
+)
 
 
 def dict_to_buffer(data):
@@ -10,26 +21,38 @@ def dict_to_buffer(data):
     return ffi.new("char[]", json_bytes + b"\0")
 
 
+def model_to_buffer(data: BaseModel):
+    return dict_to_buffer(data.model_dump(mode="python"))
+
+
+def nested_dict_to_buffer(data: dict[HexStr, BaseModel]):
+    new_data = {}
+    for key, value in data.items():
+        new_data[key] = value.model_dump(mode="python")
+    return dict_to_buffer(new_data)
+
+
 class BaseCryptoModule:
     def __init__(self, curve_name):
-        if curve_name not in self.get_curves():
+        if curve_name not in self._get_curves():
             raise ValueError(
-                f"Invalid curve name '{curve_name}'. valid curve names: {self.get_curves()}"
+                f"Invalid curve name '{curve_name}'. valid curve names: {self._get_curves()}"
             )
+        self.curve_name = curve_name
         self.ffi = ffi
         self.lib = lib
 
     @staticmethod
-    def get_curves() -> list[str]:
+    def _get_curves() -> list[str]:
         return ["ed25519", "secp256k1", "secp256k1_tr"]
 
-    def get_json_and_free_mem(self, ptr):
-        if ptr == ffi.NULL:
+    def _get_json_and_free_mem(self, ptr) -> dict:
+        if ptr == self.ffi.NULL:
             raise ValueError("Received null pointer from Rust function")
 
         try:
             # Read null-terminated C string
-            json_buffer = ffi.string(ptr).decode("utf-8")
+            json_buffer = self.ffi.string(ptr).decode("utf-8")
             if not json_buffer:
                 raise ValueError("Empty JSON buffer returned")
 
@@ -45,127 +68,126 @@ class BaseCryptoModule:
         finally:
             lib.mem_free(ptr)
 
-    def get_id(self, identifier):
-        ptr = self.lib.get_id(dict_to_buffer(identifier))
-        data = self.get_json_and_free_mem(ptr)
+    def _call_cffi_function(self, func_name, *args):
+        func = getattr(self.lib, func_name)
+        ptr = func(*args)
+        data = self._get_json_and_free_mem(ptr)
         return data
 
-    def num_to_id(self, num):
-        ptr = self.lib.num_to_id(num)
-        data = self.get_json_and_free_mem(ptr)
-        return data
-    
-    def keypair_new(self):
-        ptr = self.lib.keypair_new()
-        data = self.get_json_and_free_mem(ptr)
-        return data
-    
-    def single_sign(self, secret, msg):
-        ptr = self.lib.single_sign(
-            dict_to_buffer(secret),
-            dict_to_buffer(msg),
+    def keypair_new(self) -> KeyPair:
+        return self._call_cffi_function("keypair_new")
+
+    def single_sign(self, secret: HexStr, msg: HexStr) -> HexStr:
+        return self._call_cffi_function(
+            "single_sign", dict_to_buffer(secret), dict_to_buffer(msg)
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
-    
-    def single_verify(self, signature, msg, pubkey):
-        ptr = self.lib.single_verify(
+
+    def single_verify(self, signature: HexStr, msg: HexStr, pubkey: HexStr) -> bool:
+        return self._call_cffi_function(
+            "single_verify",
             dict_to_buffer(signature),
             dict_to_buffer(msg),
             dict_to_buffer(pubkey),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
-    def dkg_part1(self, identifier, max_signers, min_signers) -> Part1ResultT:
-        ptr = self.lib.dkg_part1(
-            dict_to_buffer(identifier),
-            max_signers,
-            min_signers,
+    def get_id(self, identifier):
+        return self._call_cffi_function("get_id", dict_to_buffer(identifier))
+
+    def num_to_id(self, num: int) -> HexStr:
+        return self._call_cffi_function("num_to_id", num)
+
+    def dkg_part1(
+        self, identifier: HexStr, max_signers: int, min_signers: int
+    ) -> DKGPart1Result:
+        return DKGPart1Result.model_validate(
+            self._call_cffi_function(
+                "dkg_part1",
+                dict_to_buffer(identifier),
+                max_signers,
+                min_signers,
+            )
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
-    def verify_proof_of_knowledge(self, identifier, commitments, signature) -> bool:
-        ptr = self.lib.verify_proof_of_knowledge(
+    def verify_proof_of_knowledge(
+        self, identifier: str, commitments, signature
+    ) -> bool:
+        return self._call_cffi_function(
+            "verify_proof_of_knowledge",
             dict_to_buffer(identifier),
             dict_to_buffer(commitments),
             dict_to_buffer(signature),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
-    def dkg_part2(self, round1_secret_package, round1_packages) -> Part2ResultT:
-        ptr = self.lib.dkg_part2(
-            dict_to_buffer(round1_secret_package), dict_to_buffer(round1_packages)
+    def dkg_part2(
+        self,
+        round1_secret_package: DKGPart1Secret,
+        round1_packages: dict[HexStr, DKGPart1Package],
+    ) -> DKGPart2Result:
+        return DKGPart2Result.model_validate(
+            self._call_cffi_function(
+                "dkg_part2",
+                model_to_buffer(round1_secret_package),
+                nested_dict_to_buffer(round1_packages),
+            )
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def dkg_verify_secret_share(self, identifier, secret_share, commitment) -> bool:
-        ptr = self.lib.dkg_verify_secret_share(
+        return self._call_cffi_function(
+            "dkg_verify_secret_share",
             dict_to_buffer(identifier),
             dict_to_buffer(secret_share),
             dict_to_buffer(commitment),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def dkg_part3(
-        self, round2_secret_package, round1_packages, round2_packages
-    ) -> Part3ResultT:
-        ptr = self.lib.dkg_part3(
-            dict_to_buffer(round2_secret_package),
-            dict_to_buffer(round1_packages),
-            dict_to_buffer(round2_packages),
+        self,
+        round2_secret_package: DKGPart2Secret,
+        round1_packages: dict[HexStr, DKGPart1Package],
+        round2_packages: dict[HexStr, DKGPart2Package],
+    ) -> DKGPart3Result:
+        return self._call_cffi_function(
+            "dkg_part3",
+            model_to_buffer(round2_secret_package),
+            nested_dict_to_buffer(round1_packages),
+            nested_dict_to_buffer(round2_packages),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def keys_generate_with_dealer(self, max_signers, min_signers):
-        ptr = self.lib.keys_generate_with_dealer(max_signers, min_signers)
-        data = self.get_json_and_free_mem(ptr)
-        return data
+        return self._call_cffi_function(
+            "keys_generate_with_dealer", max_signers, min_signers
+        )
 
     def keys_split(self, secret, max_signers, min_signers):
-        ptr = self.lib.keys_split(
+        return self._call_cffi_function(
+            "keys_split",
             dict_to_buffer(secret),
             max_signers,
             min_signers,
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
-    def get_pubkey(self, secret):
-        ptr = self.lib.get_pubkey(dict_to_buffer(secret))
-        data = self.get_json_and_free_mem(ptr)
-        return data
+    def get_pubkey(self, secret: HexStr) -> HexStr:
+        return self._call_cffi_function("get_pubkey", dict_to_buffer(secret))
 
     def key_package_from(self, key_share):
-        ptr = self.lib.key_package_from(dict_to_buffer(key_share))
-        data = self.get_json_and_free_mem(ptr)
-        return data
+        return self._call_cffi_function("key_package_from", dict_to_buffer(key_share))
 
     def round1_commit(self, key_share):
-        ptr = self.lib.round1_commit(dict_to_buffer(key_share))
-        data = self.get_json_and_free_mem(ptr)
-        return data
+        return self._call_cffi_function("round1_commit", dict_to_buffer(key_share))
 
     def signing_package_new(self, signing_commitments, msg):
-        ptr = self.lib.signing_package_new(
-            dict_to_buffer(signing_commitments), dict_to_buffer(msg)
+        return self._call_cffi_function(
+            "signing_package_new",
+            dict_to_buffer(signing_commitments),
+            dict_to_buffer(msg),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def round2_sign(self, signing_package, signer_nonces, key_package):
-        ptr = self.lib.round2_sign(
+        return self._call_cffi_function(
+            "round2_sign",
             dict_to_buffer(signing_package),
             dict_to_buffer(signer_nonces),
             dict_to_buffer(key_package),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def verify_share(
         self,
@@ -175,33 +197,30 @@ class BaseCryptoModule:
         signing_package,
         verifying_key,
     ):
-        ptr = self.lib.verify_share(
+        return self._call_cffi_function(
+            "verify_share",
             dict_to_buffer(identifier),
             dict_to_buffer(verifying_share),
             dict_to_buffer(signature_share),
             dict_to_buffer(signing_package),
             dict_to_buffer(verifying_key),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def aggregate(self, signing_package, signature_shares, pubkey_package):
-        ptr = self.lib.aggregate(
+        return self._call_cffi_function(
+            "aggregate",
             dict_to_buffer(signing_package),
             dict_to_buffer(signature_shares),
             dict_to_buffer(pubkey_package),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def verify_group_signature(self, signature, msg, pubkey_package):
-        ptr = self.lib.verify_group_signature(
+        return self._call_cffi_function(
+            "verify_group_signature",
             dict_to_buffer(signature),
             dict_to_buffer(msg),
             dict_to_buffer(pubkey_package),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
 
 class WithCustomTweak(BaseCryptoModule):
@@ -209,23 +228,21 @@ class WithCustomTweak(BaseCryptoModule):
         super().__init__(curve_name)
 
     def pubkey_tweak(self, pubkey, tweak_by):
-        ptr = self.lib.pubkey_tweak(dict_to_buffer(pubkey), dict_to_buffer(tweak_by))
-        data = self.get_json_and_free_mem(ptr)
-        return data
+        return self._call_cffi_function(
+            "pubkey_tweak", dict_to_buffer(pubkey), dict_to_buffer(tweak_by)
+        )
 
     def pubkey_package_tweak(self, pubkey_package, tweak_by):
-        ptr = self.lib.pubkey_package_tweak(
-            dict_to_buffer(pubkey_package), dict_to_buffer(tweak_by)
+        return self._call_cffi_function(
+            "pubkey_package_tweak",
+            dict_to_buffer(pubkey_package),
+            dict_to_buffer(tweak_by),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def key_package_tweak(self, key_package, tweak_by):
-        ptr = self.lib.key_package_tweak(
-            dict_to_buffer(key_package), dict_to_buffer(tweak_by)
+        return self._call_cffi_function(
+            "key_package_tweak", dict_to_buffer(key_package), dict_to_buffer(tweak_by)
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
 
 class Secp256k1_TR(BaseCryptoModule):
@@ -235,42 +252,38 @@ class Secp256k1_TR(BaseCryptoModule):
     def round2_sign_with_tweak(
         self, signing_package, signer_nonces, key_package, merkle_root=None
     ):
-        ptr = self.lib.round2_sign_with_tweak(
+        return self._call_cffi_function(
+            "round2_sign_with_tweak",
             dict_to_buffer(signing_package),
             dict_to_buffer(signer_nonces),
             dict_to_buffer(key_package),
-            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
+            self.ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def aggregate_with_tweak(
         self, signing_package, signature_shares, pubkey_package, merkle_root=None
     ):
-        ptr = self.lib.aggregate_with_tweak(
+        return self._call_cffi_function(
+            "aggregate_with_tweak",
             dict_to_buffer(signing_package),
             dict_to_buffer(signature_shares),
             dict_to_buffer(pubkey_package),
-            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
+            self.ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def pubkey_package_tweak(self, pubkey_package, merkle_root=None):
-        ptr = self.lib.pubkey_package_tweak(
+        return self._call_cffi_function(
+            "pubkey_package_tweak",
             dict_to_buffer(pubkey_package),
-            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
+            self.ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
     def key_package_tweak(self, key_package, merkle_root=None):
-        ptr = self.lib.key_package_tweak(
+        return self._call_cffi_function(
+            "key_package_tweak",
             dict_to_buffer(key_package),
-            ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
+            self.ffi.NULL if merkle_root is None else dict_to_buffer(merkle_root),
         )
-        data = self.get_json_and_free_mem(ptr)
-        return data
 
 
 # ed25519 = WithCustomTweak("ed25519")
