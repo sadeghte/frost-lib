@@ -50,7 +50,7 @@ pub extern "C" fn num_to_id(num: c_ulonglong) -> *const c_char {
 }
 
 #[no_mangle]
-pub extern "C" fn keypair_new() -> *const u8 {
+pub extern "C" fn keypair_new() -> *const c_char {
 	let mut rng = thread_rng();
     let signing_key = SigningKey::new(&mut rng);
     let verifying_key = signing_key.into();
@@ -64,7 +64,7 @@ pub extern "C" fn keypair_new() -> *const u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn single_sign(secret_buff: *const u8, msg_buff: *const u8) -> *const u8 {
+pub extern "C" fn single_sign(secret_buff: *const c_char, msg_buff: *const c_char) -> *const c_char {
 	let scalar: SerializableScalar = RET_ERR!(from_json_buff(secret_buff));
 	let secret: SigningKey = RET_ERR!(SigningKey::from_scalar(scalar.0));
 
@@ -79,10 +79,10 @@ pub extern "C" fn single_sign(secret_buff: *const u8, msg_buff: *const u8) -> *c
 
 #[no_mangle]
 pub extern "C" fn single_verify(
-    signature_buff: *const u8, 
-    msg_buff: *const u8, 
-    pubkey_buff: *const u8
-) -> *const u8 {
+    signature_buff: *const c_char, 
+    msg_buff: *const c_char, 
+    pubkey_buff: *const c_char
+) -> *const c_char {
 	let signature: frost_core::Signature<Secp256K1Sha256TR> = RET_ERR!(from_json_buff(signature_buff));
 
     let msg_hex: String = RET_ERR!(from_json_buff(msg_buff));

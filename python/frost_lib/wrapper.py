@@ -59,6 +59,23 @@ class BaseCryptoModule:
         ptr = self.lib.keypair_new()
         data = self.get_json_and_free_mem(ptr)
         return data
+    
+    def single_sign(self, secret, msg):
+        ptr = self.lib.single_sign(
+            dict_to_buffer(secret),
+            dict_to_buffer(msg),
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
+    
+    def single_verify(self, signature, msg, pubkey):
+        ptr = self.lib.single_verify(
+            dict_to_buffer(signature),
+            dict_to_buffer(msg),
+            dict_to_buffer(pubkey),
+        )
+        data = self.get_json_and_free_mem(ptr)
+        return data
 
     def dkg_part1(self, identifier, max_signers, min_signers) -> Part1ResultT:
         ptr = self.lib.dkg_part1(

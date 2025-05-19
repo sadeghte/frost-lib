@@ -31,6 +31,9 @@ fn main() {
         // C-compatible function declarations for frost-secp256k1-tr
         const char* get_id(const char* id);
         const char* num_to_id(unsigned long long num);
+        const char* keypair_new();
+        const char* single_sign(const char* secret, const char* msg);
+        const char* single_verify(const char* signature, const char* msg, const char* pubkey);
         const char* dkg_part1(const char* id, unsigned short max_signers, unsigned short min_signers);
         const char* verify_proof_of_knowledge(const char* id, const char* commitments_buff, const char* sign_buff);
         const char* dkg_part2(const char* r1_skrt_pkg_buff, const char* r1_pkg_buff);
