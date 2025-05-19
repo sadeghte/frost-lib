@@ -4,6 +4,9 @@ import json
 keypair = frost.keypair_new()
 print("keypair: ", json.dumps(keypair, indent=4))
 
+pubkey = frost.get_pubkey(keypair['signing_key'])
+print("verifying_key: ", pubkey);
+
 msg = b"sample message to sign"
 
 signature = frost.single_sign(keypair['signing_key'], msg.hex())

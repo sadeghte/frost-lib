@@ -136,6 +136,11 @@ class BaseCryptoModule:
         data = self.get_json_and_free_mem(ptr)
         return data
 
+    def get_pubkey(self, secret):
+        ptr = self.lib.get_pubkey(dict_to_buffer(secret))
+        data = self.get_json_and_free_mem(ptr)
+        return data
+
     def key_package_from(self, key_share):
         ptr = self.lib.key_package_from(dict_to_buffer(key_share))
         data = self.get_json_and_free_mem(ptr)
