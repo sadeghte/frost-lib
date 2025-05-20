@@ -46,30 +46,6 @@ class DKGPart1Result(BaseModel):
     package: DKGPart1Package
 
 
-{
-    "secret_package": {
-        "identifier": "0000000000000000000000000000000000000000000000000000000000000003",
-        "commitment": [
-            "032f825305fca088a05b00a52254c1bd4891646dd06d6d2c96973678e7653f74d4",
-            "035ba2ca570faa2a922770f99e484eee08482ca394acb20d144e35379b7fb9694f",
-        ],
-        "secret_share": "2cbd1ee0ffbda560af7cfa8d42c681eb0adeeadd3a1f547bc472c255ba278071",
-        "min_signers": 2,
-        "max_signers": 3,
-    },
-    "packages": {
-        "0000000000000000000000000000000000000000000000000000000000000001": {
-            "header": {"version": 0, "ciphersuite": "FROST-secp256k1-SHA256-TR-v1"},
-            "signing_share": "7cbb66bfc170e28267ce8910d608da9255b0a34a0cf7673d910353d9811d6fbb",
-        },
-        "0000000000000000000000000000000000000000000000000000000000000002": {
-            "header": {"version": 0, "ciphersuite": "FROST-secp256k1-SHA256-TR-v1"},
-            "signing_share": "54bc42d0609743f18ba5c1cf0c67ae3eb047c713a38b5ddcaabb0b179da27816",
-        },
-    },
-}
-
-
 class DKGPart2Secret(BaseModel):
     identifier: HexStr
     commitment: list[HexStr]
