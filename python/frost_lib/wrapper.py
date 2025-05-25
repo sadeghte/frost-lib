@@ -275,7 +275,7 @@ class WithCustomTweak(BaseCryptoModule):
         return PrivateKeyPackage.model_validate(
             self._call_cffi_function(
                 "key_package_tweak",
-                to_buffer(key_package),
+                model_to_buffer(key_package),
                 self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
             )
         )
