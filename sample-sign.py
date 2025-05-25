@@ -1,12 +1,13 @@
 from frost_lib import secp256k1_tr as frost
+from frost_lib.types import DKGPart3PubKey
 
 min_signers = 2
 max_signers = 3
 
 result = frost.keys_generate_with_dealer(max_signers, min_signers)
 shares = result["shares"]
-pubkey_package = result["pubkey_package"]
-print("publicKey: ", pubkey_package["verifying_key"])
+pubkey_package = DKGPart3PubKey.model_validate(result["pubkey_package"])
+print("publicKey: ", pubkey_package.verifying_key)
 # print("Result:", result)
 
 key_packages = {}
@@ -22,10 +23,10 @@ Round 1: generating nonces and signing commitments for each participant
 """
 for identifier, _ in list(result["shares"].items())[:min_signers]:
     result = frost.round1_commit(
-        key_packages[identifier]["signing_share"],
+        key_packages[identifier].signing_share,
     )
-    nonces_map[identifier] = result["nonces"]
-    commitments_map[identifier] = result["commitments"]
+    nonces_map[identifier] = result.nonces
+    commitments_map[identifier] = result.commitments
 
 signature_shares = {}
 message = b"message to sign"

@@ -3,6 +3,7 @@ import json
 from .secp256k1_tr import ffi, lib
 from .types import (
     BaseModel,
+    Commitment,
     DKGPart1Package,
     DKGPart1Result,
     DKGPart1Secret,
@@ -12,6 +13,12 @@ from .types import (
     DKGPart3Result,
     HexStr,
     KeyPair,
+    Nonce,
+    PrivateKeyPackage,
+    PublicKeyPackage,
+    Round1Commitment,
+    SharePackage,
+    SigningPackage,
 )
 
 
@@ -145,11 +152,13 @@ class BaseCryptoModule:
         round1_packages: dict[HexStr, DKGPart1Package],
         round2_packages: dict[HexStr, DKGPart2Package],
     ) -> DKGPart3Result:
-        return self._call_cffi_function(
-            "dkg_part3",
-            model_to_buffer(round2_secret_package),
-            nested_dict_to_buffer(round1_packages),
-            nested_dict_to_buffer(round2_packages),
+        return DKGPart3Result.model_validate(
+            self._call_cffi_function(
+                "dkg_part3",
+                model_to_buffer(round2_secret_package),
+                nested_dict_to_buffer(round1_packages),
+                nested_dict_to_buffer(round2_packages),
+            )
         )
 
     def keys_generate_with_dealer(self, max_signers, min_signers):
@@ -168,25 +177,40 @@ class BaseCryptoModule:
     def get_pubkey(self, secret: HexStr) -> HexStr:
         return self._call_cffi_function("get_pubkey", to_buffer(secret))
 
-    def key_package_from(self, key_share):
-        return self._call_cffi_function("key_package_from", to_buffer(key_share))
-
-    def round1_commit(self, key_share):
-        return self._call_cffi_function("round1_commit", to_buffer(key_share))
-
-    def signing_package_new(self, signing_commitments, msg):
-        return self._call_cffi_function(
-            "signing_package_new",
-            to_buffer(signing_commitments),
-            to_buffer(msg),
+    def key_package_from(self, key_share: HexStr) -> PrivateKeyPackage:
+        return PrivateKeyPackage.model_validate(
+            self._call_cffi_function("key_package_from", to_buffer(key_share))
         )
 
-    def round2_sign(self, signing_package, signer_nonces, key_package):
-        return self._call_cffi_function(
-            "round2_sign",
-            to_buffer(signing_package),
-            to_buffer(signer_nonces),
-            to_buffer(key_package),
+    def round1_commit(self, key_share: HexStr) -> Round1Commitment:
+        return Round1Commitment.model_validate(
+            self._call_cffi_function("round1_commit", to_buffer(key_share))
+        )
+
+    def signing_package_new(
+        self, signing_commitments: dict[HexStr, Commitment], msg: HexStr
+    ) -> SigningPackage:
+        return SigningPackage.model_validate(
+            self._call_cffi_function(
+                "signing_package_new",
+                nested_dict_to_buffer(signing_commitments),
+                to_buffer(msg),
+            )
+        )
+
+    def round2_sign(
+        self,
+        signing_package: SigningPackage,
+        signer_nonces: Nonce,
+        key_package: PrivateKeyPackage,
+    ) -> SharePackage:
+        return SharePackage.model_validate(
+            self._call_cffi_function(
+                "round2_sign",
+                model_to_buffer(signing_package),
+                model_to_buffer(signer_nonces),
+                model_to_buffer(key_package),
+            )
         )
 
     def verify_share(
@@ -206,20 +230,27 @@ class BaseCryptoModule:
             to_buffer(verifying_key),
         )
 
-    def aggregate(self, signing_package, signature_shares, pubkey_package):
+    def aggregate(
+        self,
+        signing_package: SigningPackage,
+        signature_shares: dict[HexStr, SharePackage],
+        pubkey_package: PublicKeyPackage,
+    ) -> HexStr:
         return self._call_cffi_function(
             "aggregate",
-            to_buffer(signing_package),
-            to_buffer(signature_shares),
-            to_buffer(pubkey_package),
+            model_to_buffer(signing_package),
+            nested_dict_to_buffer(signature_shares),
+            model_to_buffer(pubkey_package),
         )
 
-    def verify_group_signature(self, signature, msg, pubkey_package):
+    def verify_group_signature(
+        self, signature: HexStr, msg: HexStr, pubkey_package: PublicKeyPackage
+    ) -> bool:
         return self._call_cffi_function(
             "verify_group_signature",
             to_buffer(signature),
             to_buffer(msg),
-            to_buffer(pubkey_package),
+            model_to_buffer(pubkey_package),
         )
 
 
@@ -227,68 +258,64 @@ class WithCustomTweak(BaseCryptoModule):
     def __init__(self, curve_name):
         super().__init__(curve_name)
 
-    def pubkey_tweak(self, pubkey, tweak_by):
-        return self._call_cffi_function(
-            "pubkey_tweak", to_buffer(pubkey), to_buffer(tweak_by)
+    def pubkey_package_tweak(
+        self, pubkey_package: PublicKeyPackage, merkle_root: HexStr | None = None
+    ) -> PublicKeyPackage:
+        return PublicKeyPackage.model_validate(
+            self._call_cffi_function(
+                "pubkey_package_tweak",
+                model_to_buffer(pubkey_package),
+                self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
+            )
         )
 
-    def pubkey_package_tweak(self, pubkey_package, tweak_by):
-        return self._call_cffi_function(
-            "pubkey_package_tweak",
-            to_buffer(pubkey_package),
-            to_buffer(tweak_by),
+    def key_package_tweak(
+        self, key_package: PrivateKeyPackage, merkle_root: HexStr | None = None
+    ) -> PrivateKeyPackage:
+        return PrivateKeyPackage.model_validate(
+            self._call_cffi_function(
+                "key_package_tweak",
+                to_buffer(key_package),
+                self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
+            )
         )
-
-    def key_package_tweak(self, key_package, tweak_by):
-        return self._call_cffi_function(
-            "key_package_tweak", to_buffer(key_package), to_buffer(tweak_by)
-        )
-
-
-class Secp256k1_TR(BaseCryptoModule):
-    def __init__(self, curve_name):
-        super().__init__(curve_name)
 
     def round2_sign_with_tweak(
-        self, signing_package, signer_nonces, key_package, merkle_root=None
-    ):
-        return self._call_cffi_function(
-            "round2_sign_with_tweak",
-            to_buffer(signing_package),
-            to_buffer(signer_nonces),
-            to_buffer(key_package),
-            self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
+        self,
+        signing_package: SigningPackage,
+        signer_nonces: Nonce,
+        key_package: PrivateKeyPackage,
+        merkle_root: HexStr | None = None,
+    ) -> SharePackage:
+        return SharePackage.model_validate(
+            self._call_cffi_function(
+                "round2_sign_with_tweak",
+                model_to_buffer(signing_package),
+                model_to_buffer(signer_nonces),
+                model_to_buffer(key_package),
+                self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
+            )
         )
 
     def aggregate_with_tweak(
-        self, signing_package, signature_shares, pubkey_package, merkle_root=None
-    ):
+        self,
+        signing_package: SigningPackage,
+        signature_shares: dict[HexStr, SharePackage],
+        pubkey_package: PublicKeyPackage,
+        merkle_root: HexStr | None = None,
+    ) -> HexStr:
         return self._call_cffi_function(
             "aggregate_with_tweak",
-            to_buffer(signing_package),
-            to_buffer(signature_shares),
-            to_buffer(pubkey_package),
-            self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
-        )
-
-    def pubkey_package_tweak(self, pubkey_package, merkle_root=None):
-        return self._call_cffi_function(
-            "pubkey_package_tweak",
-            to_buffer(pubkey_package),
-            self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
-        )
-
-    def key_package_tweak(self, key_package, merkle_root=None):
-        return self._call_cffi_function(
-            "key_package_tweak",
-            to_buffer(key_package),
+            model_to_buffer(signing_package),
+            nested_dict_to_buffer(signature_shares),
+            model_to_buffer(pubkey_package),
             self.ffi.NULL if merkle_root is None else to_buffer(merkle_root),
         )
 
 
 # ed25519 = WithCustomTweak("ed25519")
 # secp256k1 = WithCustomTweak("secp256k1")
-secp256k1_tr = Secp256k1_TR("secp256k1_tr")
+secp256k1_tr = WithCustomTweak("secp256k1_tr")
 
 __all__ = [
     # "ed25519",

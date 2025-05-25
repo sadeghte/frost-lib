@@ -10,15 +10,15 @@ $ python samples/sample-btc-tx-normal.py key-file-1
 
 import json
 import os
-import sys
 
 import utils
 from bitcoinutils.constants import TAPROOT_SIGHASH_ALL
 from bitcoinutils.keys import PublicKey
 from bitcoinutils.transactions import Transaction, TxInput, TxOutput, TxWitnessInput
 from frost_lib import secp256k1_tr as frost
+from frost_lib.types import PublicKeyPackage
 
-[_, key_file_name] = sys.argv
+[_, key_file_name] = (1, "./samples/key_file")
 
 key_file_path = f"{key_file_name}.json"
 if os.path.exists(key_file_name):
@@ -30,7 +30,7 @@ with open(key_file_path, "r") as file:
     n = json_data["n"]
     participants = json_data["participants"]
     key_packages = json_data["keyPackages"]
-    pubkey_package = json_data["pubkeyPackage"]
+    pubkey_package = PublicKeyPackage.model_validate(json_data["pubkeyPackage"])
 
 
 nonces_map = {}
@@ -44,8 +44,8 @@ for identifier in participants[:threshold]:
     result = frost.round1_commit(
         key_packages[identifier]["signing_share"],
     )
-    nonces_map[identifier] = result["nonces"]
-    commitments_map[identifier] = result["commitments"]
+    nonces_map[identifier] = result.nonces
+    commitments_map[identifier] = result.commitments
 
 """
 ==========================================================================
@@ -56,7 +56,7 @@ Round 2: creating transaction
 # tweak_by = b"sample merkle root".hex()
 tweak_by = None
 pubkey_package_tweaked = frost.pubkey_package_tweak(pubkey_package, tweak_by)
-public_key = PublicKey(pubkey_package["verifying_key"])
+public_key = PublicKey(pubkey_package.verifying_key)
 print("publicKey:", public_key.to_hex())
 
 taproot_address = public_key.get_taproot_address()

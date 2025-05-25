@@ -97,12 +97,12 @@ for participant_identifier in participants:
     )
 
     (key_package, pubkey_package) = (
-        result_part3["key_package"],
-        result_part3["pubkey_package"],
+        result_part3.key_package,
+        result_part3.pubkey_package,
     )
 
-    key_packages[participant_identifier] = key_package
-    pubkey_packages[participant_identifier] = pubkey_package
+    key_packages[participant_identifier] = key_package.model_dump(mode="python")
+    pubkey_packages[participant_identifier] = pubkey_package.model_dump(mode="python")
 
     print("*" * 100)
     print(result_part3)

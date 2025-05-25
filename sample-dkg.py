@@ -1,5 +1,3 @@
-import json
-
 from frost_lib import secp256k1_tr as frost
 
 min_signers = 2
@@ -47,8 +45,8 @@ for identifier in participants:
     # print("round1_secret_package: ", json.dumps(round1_secret_package, indent=4))
     result_part2 = frost.dkg_part2(round1_secret_package, round1_packages)
     (round2_secret_package, round2_packages) = (
-        result_part2["secret_package"],
-        result_part2["packages"],
+        result_part2.secret_package,
+        result_part2.packages,
     )
     # print("result: ", json.dumps(result_part2, indent=2))
     round2_secret_packages[identifier] = round2_secret_package
@@ -79,12 +77,12 @@ for participant_identifier in participants:
     )
 
     (key_package, pubkey_package) = (
-        result_part3["key_package"],
-        result_part3["pubkey_package"],
+        result_part3.key_package,
+        result_part3.pubkey_package,
     )
 
     key_packages[participant_identifier] = key_package
     pubkey_packages[participant_identifier] = pubkey_package
 
-print("key_packages", json.dumps(key_packages, indent=2))
-print("pubkey_packages", json.dumps(pubkey_packages, indent=2))
+print("key_packages", key_packages)
+print("pubkey_packages", pubkey_packages)

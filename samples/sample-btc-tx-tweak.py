@@ -10,15 +10,12 @@ $ python samples/sample-btc-tx-tweak.py key-file-1
 
 import json
 import os
-import sys
 
-import utils
-from bitcoinutils.constants import TAPROOT_SIGHASH_ALL
 from bitcoinutils.keys import PublicKey
-from bitcoinutils.transactions import Transaction, TxInput, TxOutput, TxWitnessInput
 from frost_lib import secp256k1_tr as frost
+from frost_lib.types import PublicKeyPackage
 
-[_, key_file_name] = sys.argv
+[_, key_file_name] = (1, "./samples/key_file")
 
 key_file_path = f"{key_file_name}.json"
 if os.path.exists(key_file_name):
@@ -31,7 +28,7 @@ with open(key_file_path, "r") as file:
     n = json_data["n"]
     participants = json_data["participants"]
     key_packages = json_data["keyPackages"]
-    pubkey_package = json_data["pubkeyPackage"]
+    pubkey_package = PublicKeyPackage.model_validate(json_data["pubkeyPackage"])
 
 
 tweak_by = b"sample merkle root".hex()
@@ -45,10 +42,10 @@ Round 1: generating nonces and signing commitments for each participant
 for identifier in participants[:threshold]:
     key_package_tweaked = frost.key_package_tweak(key_packages[identifier], tweak_by)
     result = frost.round1_commit(
-        key_package_tweaked["signing_share"],
+        key_package_tweaked.signing_share,
     )
-    nonces_map[identifier] = result["nonces"]
-    commitments_map[identifier] = result["commitments"]
+    nonces_map[identifier] = result.nonces
+    commitments_map[identifier] = result.commitments
 
 """
 ==========================================================================
@@ -57,33 +54,33 @@ Round 2: creating transaction
 """
 
 pubkey_package_tweaked = frost.pubkey_package_tweak(pubkey_package, tweak_by)
-public_key_tweaked = PublicKey(pubkey_package_tweaked["verifying_key"])
+public_key_tweaked = PublicKey(pubkey_package_tweaked.verifying_key)
 # print("publicKey:", public_key.to_hex())
 
-taproot_address = public_key_tweaked.get_taproot_address()
-print("address:", taproot_address.to_string())
+# taproot_address = public_key_tweaked.get_taproot_address()
+# print("address:", taproot_address.to_string())
 
-utxo = utils.get_utxos(taproot_address.to_string())[0]
-# print("utxo:", json.dumps(utxo, indent=2))
+# utxo = utils.get_utxos(taproot_address.to_string())[0]
+# # print("utxo:", json.dumps(utxo, indent=2))
 
-amount = utxo["value"]
-fee = 150
+# amount = utxo["value"]
+# fee = 150
 
-txin = TxInput(utxo["txid"], utxo["vout"])
-# print("txin:", txin)
+# txin = TxInput(utxo["txid"], utxo["vout"])
+# # print("txin:", txin)
 
-# create transaction output
-txout = TxOutput(amount - fee, taproot_address.to_script_pub_key())
-# print("txout", txout)
+# # create transaction output
+# txout = TxOutput(amount - fee, taproot_address.to_script_pub_key())
+# # print("txout", txout)
 
-tx = Transaction([txin], [txout], has_segwit=True)
-# print("tx: ", tx)
-utxos_scriptPubkeys = [taproot_address.to_script_pub_key()]
-amounts = [amount]
-tx_digest = tx.get_transaction_taproot_digest(
-    0, utxos_scriptPubkeys, amounts, 0, sighash=TAPROOT_SIGHASH_ALL
-)
-print("tx digest:", tx_digest.hex())
+# tx = Transaction([txin], [txout], has_segwit=True)
+# # print("tx: ", tx)
+# utxos_scriptPubkeys = [taproot_address.to_script_pub_key()]
+# amounts = [amount]
+# tx_digest = tx.get_transaction_taproot_digest(
+#     0, utxos_scriptPubkeys, amounts, 0, sighash=TAPROOT_SIGHASH_ALL
+# )
+# print("tx digest:", tx_digest.hex())
 
 """
 ==========================================================================
@@ -91,7 +88,7 @@ Round 2: each participant generates their signature share
 ==========================================================================
 """
 signature_shares = {}
-signing_package = frost.signing_package_new(commitments_map, tx_digest.hex())
+signing_package = frost.signing_package_new(commitments_map, b"message".hex())
 # print(json.dumps(signing_package, indent=2))
 
 for identifier, _ in nonces_map.items():
@@ -115,7 +112,7 @@ group_signature = frost.aggregate_with_tweak(
 
 verified = frost.verify_group_signature(
     group_signature,
-    tx_digest.hex(),
+    b"message".hex(),
     frost.pubkey_package_tweak(pubkey_package_tweaked, None),
 )
 assert verified, "group signature not verified"
@@ -126,7 +123,7 @@ TX broadcast
 ==========================================================================
 """
 
-tx.witnesses.append(TxWitnessInput([group_signature]))
+# tx.witnesses.append(TxWitnessInput([group_signature]))
 
-tx_hash = utils.broadcast_tx(tx.serialize())
-print("TX Hash: ", tx_hash)
+# tx_hash = utils.broadcast_tx(tx.serialize())
+# print("TX Hash: ", tx_hash)
